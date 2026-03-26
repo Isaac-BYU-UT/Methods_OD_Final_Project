@@ -1,6 +1,6 @@
 function [r_converted_km, v_converted_km_sec] = ECEF_ECI_Converter(r_original_km, v_original_km_sec, UTC_date_time, conversion_type, EOP_params)
 
-time_struct = ComputeTimeSystems(UTC_date_time, EOP_params.delta_AT_sec, EOP_params.UT1_UTC_sec);
+time_struct = Tools.ComputeTimeSystems(UTC_date_time, EOP_params.delta_AT_sec, EOP_params.UT1_UTC_sec);
 arcsec2rad = pi/648000; % Number of arseconds per radian
 arcsec2deg = 1/3600; % Number of arcseconds per degree 
 t_TT = time_struct.t_TT_centuries;
@@ -13,7 +13,7 @@ P = rot3_rad(zeta_rad)*rot2_rad(-theta_rad)*rot3_rad(z_rad);
 %% N Nutation Matrix
 
 % Pull out nut80 params
-ECI_ECEF_Transform_Data = get_EOP_data(); % Includes table_EOP_IERS, table_EOP_Celestrak, and nut80
+ECI_ECEF_Transform_Data = Tools.get_EOP_data(); % Includes table_EOP_IERS, table_EOP_Celestrak, and nut80
 nut80 = ECI_ECEF_Transform_Data.nut80;
 
 % Using Eq 3-68
@@ -114,10 +114,10 @@ yp_rad = EOP_params.y_pole_arcsec * arcsec2rad;
 
 M = rot1_rad(yp_rad)*rot2_rad(xp_rad); % Full version
 %% Orthogonalize All Matrices
-M = orthodcm(M);
-S = orthodcm(S);
-N = orthodcm(N);
-P = orthodcm(P);
+M = Tools.orthodcm(M);
+S = Tools.orthodcm(S);
+N = Tools.orthodcm(N);
+P = Tools.orthodcm(P);
 %% Compute Transform:
 
 Omega_Earth_Vector_Rad_Sec = [0; 0; EOP_params.omega_earth_rad_sec];

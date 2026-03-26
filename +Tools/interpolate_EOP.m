@@ -1,7 +1,7 @@
 function EOP_interpolated_simplified = interpolate_EOP(UTC_date_time, EOP_Source)
 
-    time_struct = ComputeTimeSystems(UTC_date_time);
-    ECI_ECEF_Transform_Data = get_EOP_data(); % Includes table_EOP_IERS, table_EOP_Celestrak, and nut80
+    time_struct = Tools.ComputeTimeSystems(UTC_date_time);
+    ECI_ECEF_Transform_Data = Tools.get_EOP_data(); % Includes table_EOP_IERS, table_EOP_Celestrak, and nut80
 
     MJD_UTC = time_struct.mjd_UTC_days;
 
