@@ -52,10 +52,11 @@ end
 
 [r_sun_t0_rel_earth_ECI_km, ~] = Forces.Vallado_sunPositionLowPrecision(time_struct_t0.jd_UTC_days);
 [r_moon_t0_rel_earth_ECI_km, ~] = Forces.Vallado_moonPositionLowPrecision(time_struct_t0.jd_UTC_days);
+sat_is_illuminated = Forces.Vallado_sunLOS(r_sat_t0_ECI_km,r_sun_t0_rel_earth_ECI_km);
 
 %% Question 1 (A, H matrix)
 
-A_t0 = A_matrix_computation_func(r_sat_t0_ECI_km, v_sat_t0_ECI_km_s, C_drag, r_sun_t0_rel_earth_ECI_km, r_moon_t0_rel_earth_ECI_km);
+A_t0 = A_matrix_computation_func(r_sat_t0_ECI_km, v_sat_t0_ECI_km_s, C_drag, r_sun_t0_rel_earth_ECI_km, r_moon_t0_rel_earth_ECI_km, sat_is_illuminated);
 H_tilde_t0 = H_matrix_computation_func(r_sat_t0_ECI_km, v_sat_t0_ECI_km_s, Stations(1).r_t0_ECI_km, Stations(1).v_t0_ECI_km_s); % Use station 1 for this comparison
 
 relDiff_A = abs((A_t0 - ref_data.A_t0_ref)./ref_data.A_t0_ref) % Improve with better pertubation models

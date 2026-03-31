@@ -17,12 +17,13 @@ function dXdt = jah_sat_1_ode(t, X, accel_func,A_func,epoch_jd_UTC_days)
     % ---- LOWER ACCURACY, BUT FAST -----
     [r_sun_rel_earth_ECI_km, ~] = Forces.Vallado_sunPositionLowPrecision(time_jd_days);
     [r_moon_rel_earth_ECI_km, ~] = Forces.Vallado_moonPositionLowPrecision(time_jd_days);
+    sat_is_illuminated = Forces.Vallado_sunLOS(r,r_sun_rel_earth_ECI_km);
 
-    A = A_func(r,v,C_drag,r_sun_rel_earth_ECI_km(:), r_moon_rel_earth_ECI_km(:)); % Everything must be 3x1
+    A = A_func(r,v,C_drag,r_sun_rel_earth_ECI_km(:), r_moon_rel_earth_ECI_km(:),sat_is_illuminated); % Everything must be 3x1
 
     STM_dot = A*STM; % Propogate STM Matrix
     
-    a_total = accel_func(r,v,C_drag,r_sun_rel_earth_ECI_km(:), r_moon_rel_earth_ECI_km(:));
+    a_total = accel_func(r,v,C_drag,r_sun_rel_earth_ECI_km(:), r_moon_rel_earth_ECI_km(:),sat_is_illuminated);
 
     C_drag_dot = 0; % The time derivative of the drag coefficient should be 0.
 

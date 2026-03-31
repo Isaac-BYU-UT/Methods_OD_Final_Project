@@ -27,9 +27,7 @@ classdef Constants
         % TODO -- this will be replaced later
         SATELLITE_AREA_M2   = 20 % Cross-sectional area of satellite for drag calculations, in m^2
 
-        SOLAR_PRESSURE_N_M2 =  4.57e-6 % TOD0: FIND VALUE FOR THIS IN KM^3/S^2 UNITS
-        SRP_AREA_M2 =  12 % aprox cross-sectional area pointed towards sun.
-        C_Reflectivity = 0.4; %TODO: Find value here.
+        SOLAR_PRESSURE_N_M2 =  4.57e-6 % TOD0: FIND VALUE FOR THIS IN KM^3/S^2 UNIT
 
         % --- Spacecraft Geometry and Optical Properties ---
         % Areas in m^2
@@ -55,10 +53,6 @@ classdef Constants
         SOLAR_CELLS_CD = 0.04;
         SOLAR_CELLS_CS = 0.04;
         
-        % Total Solar Pressure Constant (P_srad) at 1 AU in N/m^2
-        % Note: 4.57e-6 is the standard at 1 AU. 
-        % SOLAR_PRESSURE_N_M2 = 4.57e-6;
-
 
         % For validation purposes only
         % R_EARTH_KM        = 6378.145 % From HW2
