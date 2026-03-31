@@ -10,12 +10,12 @@ syms r_moon_rel_earth_ECI_km [3 1] real
 X_states = [r_km; v_km_s; C_drag];
 
 a_2B = Forces.Gravity_2Body(r_km);
-a_Zonals = Forces.Gravity_Zonal(r_km, true, false, false); % J2, J3, J4 toggles.
+a_Zonals = Forces.Gravity_Zonal(r_km, true, true, true); % J2, J3, J4 toggles.
 a_Drag = Forces.Atmospheric_Drag(r_km, v_km_s, C_drag);
-% a_LuniSolar = Forces.Luni_Solar_Pertubations(r_km, r_sun_rel_earth_ECI_km, r_moon_rel_earth_ECI_km);
-% a_SRP = Forces.Solar_Radiation_Pressure(r_km, r_sun_rel_earth_ECI_km);
+a_LuniSolar = Forces.Luni_Solar_Pertubations(r_km, r_sun_rel_earth_ECI_km, r_moon_rel_earth_ECI_km);
+a_SRP = Forces.Solar_Radiation_Pressure(r_km, r_sun_rel_earth_ECI_km);
 
-a_total = a_2B + a_Zonals + a_Drag; % + a_LuniSolar + a_SRP; % In the future state of this, the Acceleration computation will include all the way to EGM-96 20x20, 
+a_total = a_2B + a_Zonals + a_Drag + a_LuniSolar + a_SRP; % In the future state of this, the Acceleration computation will include all the way to EGM-96 20x20, 
 
 F_dynamics = [v_km_s; a_total; 0];
 A_matrix = jacobian(F_dynamics, X_states); % The A matrix will just use pertubations, not EGM-96 20x20.

@@ -9,17 +9,21 @@ function dXdt = jah_sat_1_ode(t, X, accel_func,A_func,epoch_jd_UTC_days)
     time_jd_days = t/Constants.SEC_IN_SOLAR_DAY + epoch_jd_UTC_days;
 
     % % Compute sun and moon positions at time
-    % [r_sun_rel_earth_ECI_km, ~] = planetEphemeris(time_jd_days, 'Earth', 'Sun');
+    % ---- HIGH ACCURACY, BUT SLOW -------
+    % [r_sun_rel_earth_ECI_km, ~] = planetEphemeris(time_jd_days, 'Earth',
+    % 'Sun'); -- THESE VECTORS NEED TO BE TRANSFORMED
     % [r_moon_rel_earth_ECI_km, ~] = planetEphemeris(time_jd_days, 'Earth', 'Moon');
 
-    r_sun_rel_earth_ECI_km = zeros(1,3);
-    r_moon_rel_earth_ECI_km = zeros(1,3);
+    % ---- LOWER ACCURACY, BUT FAST -----
+    [r_sun_rel_earth_ECI_km, ~] = Forces.Vallado_sunPositionLowPrecision(time_jd_days);
+    [r_moon_rel_earth_ECI_km, ~] = Forces.Vallado_moonPositionLowPrecision(time_jd_days);
 
-    A = A_func(r,v,C_drag,r_sun_rel_earth_ECI_km', r_moon_rel_earth_ECI_km'); % Everything must be 3x1
+
+    A = A_func(r,v,C_drag,r_sun_rel_earth_ECI_km(:), r_moon_rel_earth_ECI_km(:)); % Everything must be 3x1
 
     STM_dot = A*STM; % Propogate STM Matrix
     
-    a_total = accel_func(r,v,C_drag,r_sun_rel_earth_ECI_km', r_moon_rel_earth_ECI_km');
+    a_total = accel_func(r,v,C_drag,r_sun_rel_earth_ECI_km(:), r_moon_rel_earth_ECI_km(:));
 
     C_drag_dot = 0; % The time derivative of the drag coefficient should be 0.
 

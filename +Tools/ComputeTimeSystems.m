@@ -13,6 +13,8 @@ function Time_Struct = ComputeTimeSystems(utc_datetime, delta_AT_sec, delta_UT1_
     % Only calculate if delta_UT1_sec is provided (at least 3 arguments)
     if nargin >= 3 && ~isempty(delta_UT1_sec)
         Time_Struct.jd_UT1_days = Time_Struct.jd_UTC_days + (delta_UT1_sec / SEC_PER_DAY);
+
+        Time_Struct.t_UT1_j_centuries = (Time_Struct.jd_UT1_days - JD_J2000_days) / DAYS_PER_CENTURY;
         
         % Calculation for Midnight (0h) UT1
         Time_Struct.jd_UT1_0h_days = floor(Time_Struct.jd_UT1_days + 0.5) - 0.5;
