@@ -18,7 +18,6 @@ function dXdt = jah_sat_1_ode(t, X, accel_func,A_func,epoch_jd_UTC_days)
     [r_sun_rel_earth_ECI_km, ~] = Forces.Vallado_sunPositionLowPrecision(time_jd_days);
     [r_moon_rel_earth_ECI_km, ~] = Forces.Vallado_moonPositionLowPrecision(time_jd_days);
 
-
     A = A_func(r,v,C_drag,r_sun_rel_earth_ECI_km(:), r_moon_rel_earth_ECI_km(:)); % Everything must be 3x1
 
     STM_dot = A*STM; % Propogate STM Matrix

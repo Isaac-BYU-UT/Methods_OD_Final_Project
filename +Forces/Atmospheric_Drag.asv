@@ -13,9 +13,13 @@ function accel_drag_km_s2 = Atmospheric_Drag(r_ECI_km, v_ECI_km_s, C_drag, r_sun
     Area_m2 = Constants.AREA_X_FACE_M2 * abs(dot(v_ECI_km_s,x_hat_unit_vec)) + ...
                 Constants.AREA_Y_FACE_M2 * abs(dot(v_ECI_km_s,y_hat_unit_vec)) + ...
                   Constants.AREA_Z_FACE_M2 * abs(dot(v_ECI_km_s,z_hat_unit_vec)) + ...
-                    Constants.AREA_SOLAR_PANEL_M2 * abs(dot(v_ECI_km_s,solar_panel_unit_vec));
+                    
 
-    % Area_m2 = Constants.SATELLITE_AREA_M2; % m^2 Approx cross-section area, TODO: Replace with projected area.
+    
+    
+
+
+    Area_m2 = Constants.SATELLITE_AREA_M2; % m^2 Approx cross-section area, TODO: Replace with projected area.
 
     density_kg_m3 = Constants.RHO_0_DRAG_KG_M3 * exp(-(norm(r_ECI_km) - Constants.R_0_DRAG_KM)/Constants.H_DRAG_KM); % kg/m^3
 

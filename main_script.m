@@ -82,6 +82,8 @@ STM_0 = eye(7); y0 = [r_sat_t0_ECI_km; v_sat_t0_ECI_km_s; C_drag; STM_0(:)];
 options = odeset('RelTol', 3e-14, 'AbsTol', 1e-16);
 [t, y] = ode45(@(t,X) jah_sat_1_ode(t, X, Acceleration_Computation_func, A_matrix_computation_func, time_struct_t0.jd_UTC_days),time_ode.tspan, y0, options);
 
+disp("Final Position:" + y(end,1:3));
+
 % Extract data from t and y at store_interval
 t_store = t(mod(t, time_ode.store_interval) == 0);
 y_store = y(mod(t, time_ode.store_interval) == 0, :);

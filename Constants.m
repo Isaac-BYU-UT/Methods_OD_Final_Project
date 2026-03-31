@@ -17,6 +17,7 @@ classdef Constants
         J3_EARTH          = -2.53241051856772e-06 % from Vallado D-1 (EGM-08), −0.000 002 532 3 from Vallado D-3
         J4_EARTH          = -1.61989759991697e-06 % from Vallado D-1 (EGM-08),  −0.000 001 620 4 from Vallado D-3
 
+         
         ARCSEC_TO_RAD     = pi/648000 % Number of arseconds per radian
         ARCSEC_TO_DEG     = 1/3600 % Number of arcseconds per degree
         MILLI_TO_NOM      = 1/1000 % Number of nominal unit per MILLI
@@ -29,6 +30,35 @@ classdef Constants
         SOLAR_PRESSURE_N_M2 =  4.57e-6 % TOD0: FIND VALUE FOR THIS IN KM^3/S^2 UNITS
         SRP_AREA_M2 =  12 % aprox cross-sectional area pointed towards sun.
         C_Reflectivity = 0.4; %TODO: Find value here.
+
+        % --- Spacecraft Geometry and Optical Properties ---
+        % Areas in m^2
+        AREA_X_FACE_M2 = 6.0;
+        AREA_Y_FACE_M2 = 8.0;
+        AREA_Z_FACE_M2 = 12.0; % Same for +Z and -Z
+        AREA_SOLAR_PANEL_M2 = 15.0;
+
+        % Optical Coefficients (Cd = Diffuse, Cs = Specular)
+        % MLI Kapton (+X, -X, +Y, -Y)
+        MLI_KAPTON_CD = 0.04;
+        MLI_KAPTON_CS = 0.59;
+
+        % White Paint (+Z)
+        WHITE_PAINT_CD = 0.80;
+        WHITE_PAINT_CS = 0.04;
+
+        % Germanium Kapton (-Z)
+        GERMANIUM_KAPTON_CD = 0.28;
+        GERMANIUM_KAPTON_CS = 0.18;
+
+        % Solar Cells
+        SOLAR_CELLS_CD = 0.04;
+        SOLAR_CELLS_CS = 0.04;
+        
+        % Total Solar Pressure Constant (P_srad) at 1 AU in N/m^2
+        % Note: 4.57e-6 is the standard at 1 AU. 
+        % SOLAR_PRESSURE_N_M2 = 4.57e-6;
+
 
         % For validation purposes only
         % R_EARTH_KM        = 6378.145 % From HW2
