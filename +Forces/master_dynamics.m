@@ -11,7 +11,7 @@ syms sat_is_illuminated
 X_states = [r_ECI_km; v_ECI_km_s; C_drag];
 
 a_2B = Forces.Gravity_2Body(r_ECI_km);
-a_Zonals = Forces.Gravity_Zonal(r_ECI_km, true, true, true); % J2, J3, J4 toggles.
+a_Zonals = Forces.Gravity_Zonal(r_ECI_km, true, false, false); % J2, J3, J4 toggles.
 a_Drag = Forces.Atmospheric_Drag(r_ECI_km, v_ECI_km_s, C_drag, r_sun_rel_earth_ECI_km);
 a_LuniSolar = Forces.Luni_Solar_Pertubations(r_ECI_km, r_sun_rel_earth_ECI_km, r_moon_rel_earth_ECI_km);
 a_SRP = Forces.Solar_Radiation_Pressure(r_ECI_km, r_sun_rel_earth_ECI_km, sat_is_illuminated);
