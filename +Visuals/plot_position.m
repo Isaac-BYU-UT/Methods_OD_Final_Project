@@ -51,21 +51,25 @@ function plot_position(r_ECI, v_ECI, P_ECI, full_orbit_ECI)
         
         % Zoom in on the satellite/covariance
         % Adjust this multiplier to see more or less of the orbit
-        limit = 1000; % km
+        limit = 1; % km
         xlim([-limit, limit]); ylim([-limit, limit]);
     end
 end
 
 function error_ellipse(C, mu, n_sigma)
-    % Helper to plot a 2D ellipse
     [V, D] = eig(C);
     t = linspace(0, 2*pi, 100);
-    % Scaled circle
-    xy = [cos(t); sin(t)] * n_sigma;
-    % Transform to ellipse: rotate by eigenvectors, scale by sqrt(eigenvalues)
-    ellipse = V * sqrt(D) * xy + mu';
+    
+    % Ensure eigenvalues are positive (numerical precision check)
+    eigs = max(diag(D), 0);
+    
+    % Create circle and scale by n_sigma * sigma
+    xy = [sqrt(eigs(1))*cos(t); sqrt(eigs(2))*sin(t)] * n_sigma;
+    
+    % Rotate to ECI/RSW orientation
+    ellipse = V * xy + mu(:);
     
     plot(ellipse(1,:), ellipse(2,:), 'LineWidth', 2, 'Color', [0 .45 .74]);
     hold on;
-    plot(mu(1), mu(2), 'r+', 'MarkerSize', 10); % Mean
+    plot(mu(1), mu(2), 'r+', 'MarkerSize', 10); 
 end

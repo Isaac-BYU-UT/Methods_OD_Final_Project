@@ -1,4 +1,5 @@
 clear; clc;
+% This is just section 4.6 from Schutz "Statistical Orbit Determination"!
 %% Load Initial Conditions
 IC = Initial_Conditions.initial_conditions_HW5();
 
@@ -22,7 +23,7 @@ options = odeset('RelTol',3e-14,'AbsTol',1e-16);
 
 %% Extract States
 % Extract r_sat and v_sat at the observation times from the ODE solution
-X_star_table = array2table(y(:,1:7), 'VariableNames', {'r_x_km', 'r_y_km', 'r_z_km', 'v_x_km_s', 'v_y_km_s', 'v_z_km_s', 'C_drag',}); % Convert to table for easier handling
+X_star_table = array2table(y(:,1:7), 'VariableNames', {'r_x_km', 'r_y_km', 'r_z_km', 'v_x_km_s', 'v_y_km_s', 'v_z_km_s', 'C_drag'}); % Convert to table for easier handling
 X_star_table.time_sec_past_epoch = t; % Add time column to the table
 
 % Now add STM elements to table.
@@ -43,11 +44,16 @@ STM_i = NaN(N_states, N_states, N_obs); % Pre-allocate 3D array for STM at each 
 H_i = NaN(2, N_states, N_obs); % Pre-allocate 3D array for H at each time step
 H_mapped_epoch = NaN(2, N_states, N_obs);
 residual_prefit = NaN(2, N_obs); % 2 x N_obs to make column vectors more naturally
-Y_computed = NaN(2, N_obs); % 2 x N_obs to make column vectors more naturally
+Y_prefit_computed = NaN(2, N_obs); % 2 x N_obs to make column vectors more naturally
+
+% A priori information
+P0 = IC.P_Covariance_States; % This is the covariance matrix of the initial state estimate at epoch (7x7)
+W_apriori = P0 \ eye(N_states); % This is W_bar_k
 
 % Initialized Accumulated Normal Equations
-Information_Matrix = zeros(N_states, N_states);
-Residual_Vector = zeros(N_states, 1);
+% Information_Matrix = zeros(N_states, N_states);
+Information_Matrix = W_apriori;
+Residual_Vector = zeros(N_states, 1); % The apriori estimate for x_0 is just the 0 vector
 
 for i = 1:length(t_obs)
     
@@ -68,18 +74,19 @@ for i = 1:length(t_obs)
     H_mapped_epoch(:,:,i) = H_i(:,:,i)*STM_i(:,:,i); % dG/dX |t_i * STM(t_i, t_0) to map from epoch to time of measurement
     
     % Compute measurement at time step i
-    Y_computed(:,i) = ENV.MeasFcn( ...
+    Y_prefit_computed(:,i) = ENV.MeasFcn( ...
         X_star_table{i,1:3}(:), ... % r_sat_ECI_km
         X_star_table{i,4:6}(:), ... % v_sat_ECI_km_s 
         r_station_t_i_ECI_km(:), ...
         v_station_t_i_ECI_km(:))';
 
     % Compute REsidual
-    residual_prefit(:,i) = ENV.ref_data.Actual_Measurements{i, {'apparent_range_km', 'apparent_range_rate_km_s'}}(:) - Y_computed(:,i); % THESE ARE COLUMN VECTORS!
+    residual_prefit(:,i) = ENV.ref_data.Actual_Measurements{i, {'apparent_range_km', 'apparent_range_rate_km_s'}}(:) - Y_prefit_computed(:,i); % THESE ARE COLUMN VECTORS!
 
     % Note that the \eye(2) is to compute the inverse of the covariance matrix:
     R_cov_inv = IC.Stations(station_id).Covariance\eye(2); % Inverse of covariance matrix for this station
     Information_Matrix = Information_Matrix + H_mapped_epoch(:,:,i)' * R_cov_inv * H_mapped_epoch(:,:,i); % Accumulate Information Matrix
+    Information_Matrix = 0.5 * (Information_Matrix + Information_Matrix'); % INSURE THAT INFORMATION MATRIX REMAINS SYMMETRIC!
     Residual_Vector = Residual_Vector + H_mapped_epoch(:,:,i)' * R_cov_inv * residual_prefit(:,i); % Accumulate Residual Vector
 end
 
@@ -87,26 +94,27 @@ end
 x_correction_0 = Information_Matrix\Residual_Vector; % Solve for correction at epoch
 X_star_new_0 = X_star_0 + x_correction_0; % Update initial state estimate at epoch
 
+P_estimated = Information_Matrix \ eye(N_states); % Updated estimate of state covariance at epoch (inverse of information matrix)
 
 %% Post Fit Residuals
 epsilon_postfit_i = NaN(2, N_obs); % 2 x N_obs to make column vectors more naturally
+Y_postfit_computed = NaN(2,N_obs);
 for i = 1:length(t_obs)
     epsilon_postfit_i(:,i) = residual_prefit(:,i) - H_mapped_epoch(:,:,i)*x_correction_0; % Post-fit residuals at time step i
+    Y_postfit_computed(:,i) = Y_prefit_computed(:,i) + H_mapped_epoch(:,:,i)*x_correction_0;
 end
 
 %% Plot Pre-fit Residuals
 
-Measurement_Table = ENV.ref_data.Actual_Measurements;
-Measurement_Table.residual_range_km = residual_prefit(1,:)';
-Measurement_Table.residual_range_rate_km_s = residual_prefit(2,:)';
-Measurement_Table.computed_range_km = Y_computed(1,:)';
-Measurement_Table.computed_range_rate_km_s = Y_computed(2,:)';
-Visuals.plot_station_residuals(Measurement_Table, {IC.Stations.Name}); hold on;
+Measurement_Table = Visuals.make_measurement_table(t_obs, ENV.ref_data.Actual_Measurements, Y_prefit_computed');
+Visuals.plot_station_residuals(Measurement_Table, {IC.Stations.Name});
+Visuals.plot_measurement_correlation_linked(Measurement_Table);
 
 %% Now post-fit residuals
-Measurement_Table.residual_range_km = epsilon_postfit_i(1,:)';
-Measurement_Table.residual_range_rate_km_s = epsilon_postfit_i(2,:)';
+
+Measurement_Table = Visuals.make_measurement_table(t_obs, ENV.ref_data.Actual_Measurements, Y_postfit_computed');
 Visuals.plot_station_residuals(Measurement_Table, {IC.Stations.Name});
+Visuals.plot_measurement_correlation_linked(Measurement_Table);
 
 %% Update ODE Run
 states_initial_input = [X_star_new_0; STM_t0_t0(:)];
