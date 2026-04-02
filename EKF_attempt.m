@@ -192,5 +192,5 @@ Visuals.plot_measurement_correlation_linked(Measurement_Table);
 
 %% Plot Post-fit Residuals (Y - h(X_hat)) --> How well did filter do?
 Post_Measurement_Table = Visuals.make_measurement_table(t_obs, ENV.ref_data.Actual_Measurements, Y_postfit_computed_observations');
-Visuals.plot_station_residuals(Post_Measurement_Table, {IC.Stations.Name});
+Visuals.plot_station_residuals_3_sigma(Post_Measurement_Table, {IC.Stations.Name},IC);
 Visuals.plot_measurement_correlation_linked(Measurement_Table);

@@ -37,39 +37,6 @@ x_hat_correction_i_minus_1 = x_bar_correction_0;
 %% Initial Observation at t=0 (First Step)
 % Check if the first observation is indeed at the epoch
 if t_obs(1) == 0  % Or whatever your epoch time is
-    %% EKF
-    % % 1. Get observation data for i=1
-    % station_id = ENV.ref_data.Actual_Measurements.station_id(1);
-    % Y_1 = ENV.ref_data.Actual_Measurements{1, {'apparent_range_km', 'apparent_range_rate_km_s'}}(:);
-    % R_1 = IC.Stations(station_id).Covariance;
-    % 
-    % % 2. Get Station position at t=0
-    % date_time_0 = IC.UTC_epoch; 
-    % EOP_params_0 = Tools.interpolate_EOP(date_time_0, "IERS");
-    % [r_stn_0, v_stn_0] = Tools.ECEF_ECI_Converter(IC.Stations(station_id).r_ECEF_km, zeros(3,1), date_time_0, "ECEF_to_ECI", EOP_params_0);
-    % 
-    % % 3. Compute H and Residuals using Initial Conditions (X_star_0)
-    % Y_comp_0 = ENV.MeasFcn(IC.r_sat_ECI_km, IC.v_sat_ECI_km_s, r_stn_0, v_stn_0);
-    % y_resid_0 = Y_1 - Y_comp_0;
-    % H_0 = ENV.HmatrixFcn(IC.r_sat_ECI_km, IC.v_sat_ECI_km_s, r_stn_0, v_stn_0);
-    % 
-    % % 4. Kalman Gain
-    % K_0 = P_bar_cov_0 * H_0' / (H_0 * P_bar_cov_0 * H_0' + R_1);
-    % 
-    % % 5. Update State and Covariance
-    % % Since x_bar_correction_0 is zero, the update is simplified:
-    % x_hat_correction_i_minus_1 = K_0 * y_resid_0; 
-    % 
-    % % Joseph Form for Covariance
-    % I = eye(N_states);
-    % P_cov_i_minus_1 = (I - K_0 * H_0) * P_bar_cov_0 * (I - K_0 * H_0)' + K_0 * R_1 * K_0';
-    % 
-    % % Update the nominal state for the first propagation
-    % X_star_input_ti_minus_1(1:N_states) = X_star_0 + x_hat_correction_i_minus_1;
-    % 
-    % % Store the computed observation for plotting
-    % Y_computed_observations(:,1) = Y_comp_0;
-
     %% Conventional
     % Initial Observation at t=0 (Conventional/Linearized KF)
     % In a conventional/linearized filter, we do NOT update X_star. 
@@ -184,6 +151,13 @@ I = eye(N_states);
 P_cov_i = (I - K_i * H_tilde_i) * P_bar_cov_i * (I - K_i * H_tilde_i)' + K_i * R_conv_i * K_i';
 P_cov_i = 0.5 * (P_cov_i + P_cov_i');
 
+% Extract sigma for Range and Range-rate from the diagonal of R
+sigma_range = sqrt(R_conv_i(1,1));
+sigma_range_rate = sqrt(R_conv_i(2,2));
+
+% Store 3-sigma values for plotting
+three_sigma_bounds(:, i) = [3 * sigma_range; 3 * sigma_range_rate];
+
 %% Post-fit calculation
 % 1. Get the updated total state
 % Note: for EKF this is X_star_ti (already updated), for CKF it is X_star_ti + x_hat
@@ -232,8 +206,8 @@ Visuals.plot_measurement_correlation_linked(Measurement_Table);
 
 %% Plot Post-fit Residuals (Y - h(X_hat)) --> How well did filter do?
 Post_Measurement_Table = Visuals.make_measurement_table(t_obs, ENV.ref_data.Actual_Measurements, Y_postfit_computed_observations');
-Visuals.plot_station_residuals(Post_Measurement_Table, {IC.Stations.Name});
-
+Visuals.plot_station_residuals_3_sigma(Post_Measurement_Table, {IC.Stations.Name}, IC);
+Visuals.plot_measurement_correlation_linked(Measurement_Table);
 
 
 
