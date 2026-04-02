@@ -1,19 +1,26 @@
 % EXTENDED KALMAN FILTER!
 clear; clc;
 % This is just section 4.7.3 from Schutz "Statistical Orbit Determination"!
+print_updates = false;
 %% Load Initial Conditions
 % IC = Initial_Conditions.initial_conditions_HW5();
 % IC = Initial_Conditions.initial_conditions_HW5_EXCLUDE_RANGE();
 % IC = Initial_Conditions.initial_conditions_HW5_EXCLUDE_RANGE_RATE();
-IC = Initial_Conditions.initial_conditions_Final_3Day();
+% IC = Initial_Conditions.initial_conditions_Phase1();
+% IC = Initial_Conditions.initial_conditions_Phase1_EXCLUDE_RANGE_RATE();
+IC = Initial_Conditions.initial_conditions_Phase1_EXCLUDE_RANGE();
+data_inclusion_mode = 'Range_Rate'; % Options: 'None', 'Range', 'Range_Rate'
+
 %% Setup Environment
 % ENV = Environment.setup_environment(IC);
-ENV = Environment.setup_environment_full(IC);
-options = odeset('RelTol',3e-14,'AbsTol',1e-16);
+% ENV = Environment.setup_environment_full_3Days(IC);
+ENV = Environment.setup_environment_full_1Day_Subset(IC);
+% options = odeset('RelTol',3e-14,'AbsTol',1e-16); % TEMPORARILY LOWER FOR FASTER RUNTIME FOR DELIVERABLES!
+options = odeset('RelTol',3e-10,'AbsTol',1e-12);
 
 %% --- SUBSET SELECTION ---
 % Choose your "Active" station: 'All', 'Atoll', 'Diego_Garcia', 'Arecibo'
-active_station_mode = 'Atoll'; 
+active_station_mode = 'All'; 
 % Map mode to ID
 station_map = struct('Atoll', 1, 'Diego_Garcia', 2, 'Arecibo', 3);
 
@@ -179,18 +186,19 @@ Y_postfit_computed_observations(:, i) = Y_post;
 
 
 %% Print Results
-disp('State Estimate Correction at t_i:');
-disp(x_hat_correction_i);
-disp('Covariance Matrix at t_i:');
-disp(P_cov_i);
+if print_updates || (mod(i,20) == 0)
+    disp('State Estimate Correction at t_i:');
+    disp(x_hat_correction_i);
+    disp('Covariance Matrix at t_i:');
+    disp(P_cov_i);
+    fprintf('Step %d of %d complete. Time: %.2f sec\n', i, length(t_obs), t_i);
+    disp('State Correction:'); disp(x_hat_correction_i');
+    
+    % This will pause execution until you press any key in the Command Window
+    % disp('Press any key to continue to the next observation...');
+    % pause;
 
-%% Print and Plot Results
-fprintf('Step %d of %d complete. Time: %.2f sec\n', i, length(t_obs), t_i);
-disp('State Correction:'); disp(x_hat_correction_i');
-
-% This will pause execution until you press any key in the Command Window
-% disp('Press any key to continue to the next observation...');
-% pause;
+end
 
 %% Update for next iteration
 
@@ -235,3 +243,104 @@ fprintf('RMS of Range Residuals (Prefit): %.6f km\n', RMS_range_prefit);
 fprintf('RMS of Range Rate Residuals (Prefit): %.6f km/s\n', RMS_range_rate_prefit);
 fprintf('RMS of Range Residuals (Postfit): %.6f km\n', RMS_range_postfit);
 fprintf('RMS of Range Rate Residuals (Postfit): %.6f km/s\n', RMS_range_rate_postfit);
+
+%% Now, propagate state and covariance to dV1 = 30 March 2018, 08:55:03 UTC.
+
+% Time of dV1 in seconds past epoch
+t_dV1 = datetime(2018,3,30,8,55,3,"TimeZone","UTC") - IC.UTC_epoch; % This gives a duration object
+t_dV1_sec = seconds(t_dV1); % Convert to seconds
+
+% X_star_input_ti_minus_1 is already set to the last updated state from the EKF loop
+
+% Propogate to Observation Time t_1
+X_star_propagation_step = X_star_input_ti_minus_1; % Start from the last updated state
+
+[t_prop_dV1,y_prop_dV1] = ode45(@(t,X) jah_sat_1_ode( ...
+    t, X, ENV.AccelFcn, ENV.AmatrixFcn, IC.time_struct.jd_UTC_days), ...
+    [t_i,t_dV1_sec], X_star_propagation_step, options);
+
+r_sat_t_dV1_ECI_km = y_prop_dV1(end,1:3)';
+v_sat_t_dV1_ECI_km_s = y_prop_dV1(end,4:6)';
+full_orbit_ECI = y_prop_dV1(:,1:6); % For plotting the orbit path in ECI
+X_star_dV1 = y_prop_dV1(end,1:N_states)';
+STM_t_dV1_t_i = reshape(y_prop_dV1(end,N_states+1:end), N_states, N_states);
+
+% Time Update of State Estimate and Covariance + PROCESS NOISE!
+% x_bar_correction_i = STM_t_i_t_i_minus_1 * x_hat_correction_i_minus_1; %
+% Omitted from EKF
+
+delta_t = t_dV1_sec - t_i;
+Q_matrix = eye(3) * IC.Sigma_Accel_km_s2^2;
+
+State_Noise_Compensation_6x6 = delta_t^2 *  [(delta_t^2/4)*Q_matrix, (delta_t/2)*Q_matrix;
+                                             (delta_t/2)*Q_matrix, (1)*Q_matrix ];
+
+State_Noise_Compensation_7x7 = zeros(N_states, N_states); % Pad to 7x7 (assuming no process noise on the 7th state, Cd)
+State_Noise_Compensation_7x7(1:6, 1:6) = State_Noise_Compensation_6x6;
+
+P_bar_cov_dV1 = STM_t_dV1_t_i * P_cov_i_minus_1 * STM_t_dV1_t_i' + State_Noise_Compensation_7x7;
+
+%% Plot RIC stuff
+Visuals.plot_RIC(r_sat_t_dV1_ECI_km, v_sat_t_dV1_ECI_km_s, P_bar_cov_dV1, full_orbit_ECI,false);
+
+%% Save all data to a .mat file for later analysis and plotting!
+timestamp = string(datetime('now', 'Format', 'yyyy-MM-dd_HH-mm-ss'));
+file_name = sprintf('Results/EKF_Results_%s_station_%s_data_%s.mat', active_station_mode, data_inclusion_mode, timestamp);
+save(file_name);
+
+%% --- FIXED AUTOMATED FIGURE EXPORT ---
+fprintf('\nExporting figures with descriptive names...\n');
+
+% 1. Define the names based on your script's execution order
+% Order: 1. Position RIC, 2. Prefit Residuals, 3. Prefit Correlation, 
+%        4. Postfit Residuals, 5. Postfit Correlation, 6. dV1 Propagation RIC
+custom_names = { ...
+    'Initial_Position_RIC_Orbit', ...
+    'Prefit_Residuals_Station_Breakdown', ...
+    'Prefit_Measurement_Correlation', ...
+    'Postfit_Residuals_Filter_Performance', ...
+    'Postfit_Measurement_Correlation', ...
+    'Final_dV1_Propagation_RIC' ...
+};
+
+% 2. Setup Export Metadata
+timestamp_str = datestr(now, 'yyyy-mm-dd_HHMM');
+base_folder = 'Figures';
+if ~exist(base_folder, 'dir'), mkdir(base_folder); end
+
+stations_str = strrep(active_station_mode, ' ', '_');
+data_type_str = strrep(data_inclusion_mode, ' ', '_');
+
+% 3. Get all open figures and SORT them by Number (important for order!)
+figHandles = findall(0, 'Type', 'figure');
+[~, idx] = sort([figHandles.Number]); 
+figHandles = figHandles(idx);
+
+% 4. Iterate and save
+for k = 1:length(figHandles)
+    thisFig = figHandles(k);
+    
+    % Determine the descriptive name
+    if k <= length(custom_names)
+        fig_title = custom_names{k};
+    else
+        % Fallback if you add more plots later
+        fig_title = sprintf('Extra_Figure_%d', thisFig.Number);
+    end
+    
+    % Construct filename
+    export_name = sprintf('%s/%s_%s_%s_%s.png', ...
+        base_folder, fig_title, stations_str, data_type_str, timestamp_str);
+    
+    % Save with high quality
+    try
+        % 'ContentType','vector' can be used for PDF, but for PNG we use Resolution
+        exportgraphics(thisFig, export_name, 'Resolution', 300);
+        fprintf('Saved: %s\n', export_name);
+    catch
+        saveas(thisFig, export_name);
+        fprintf('Saved (fallback): %s\n', export_name);
+    end
+end
+
+fprintf('Figure export complete. %d files saved to /%s.\n', length(figHandles), base_folder);

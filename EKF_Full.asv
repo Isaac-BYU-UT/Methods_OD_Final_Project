@@ -1,0 +1,286 @@
+% EXTENDED KALMAN FILTER!
+clear; clc;
+% This is just section 4.7.3 from Schutz "Statistical Orbit Determination"!
+print_updates = false;
+%% Load Initial Conditions
+% IC = Initial_Conditions.initial_conditions_HW5();
+% IC = Initial_Conditions.initial_conditions_HW5_EXCLUDE_RANGE();
+% IC = Initial_Conditions.initial_conditions_HW5_EXCLUDE_RANGE_RATE();
+IC = Initial_Conditions.initial_conditions_Phase1();
+data_inclusion_mode = 'All'; % Options: 'None', 'Range', 'Range_Rate'
+
+%% Setup Environment
+% ENV = Environment.setup_environment(IC);
+% ENV = Environment.setup_environment_full_3Days(IC);
+ENV = Environment.setup_environment_full_1Day_Subset(IC);
+% options = odeset('RelTol',3e-14,'AbsTol',1e-16); % TEMPORARILY LOWER FOR FASTER RUNTIME FOR DELIVERABLES!
+options = odeset('RelTol',3e-10,'AbsTol',1e-12);
+
+%% --- SUBSET SELECTION ---
+% Choose your "Active" station: 'All', 'Atoll', 'Diego_Garcia', 'Arecibo'
+active_station_mode = 'Atoll'; 
+% Map mode to ID
+station_map = struct('Atoll', 1, 'Diego_Garcia', 2, 'Arecibo', 3);
+
+%% Initialize Filter Values
+X_star_0 = [IC.r_sat_ECI_km; IC.v_sat_ECI_km_s; IC.C_drag];
+N_states = length(X_star_0);
+STM_t0_t0 = eye(N_states);
+IC.y0 = [X_star_0; STM_t0_t0(:)]; % For input into ODE
+
+% A priori information
+P_bar_cov_0 = IC.P_Covariance_States; % This is the covariance matrix of the initial state estimate at epoch (7x7)
+% x_bar_correction_0 = zeros(N_states,1); % Omitted in EKF
+%% Set Initial Observation Times (ONLY FOR FIRST ROUND!)
+t_obs = ENV.ref_data.Actual_Measurements.time_sec_past_epoch;
+N_obs = length(t_obs);
+
+%% Create storage vector for computed observations!
+
+Y_prefit_computed_observations = zeros(2,N_obs); % To store computed observations for each time step
+Y_postfit_computed_observations = zeros(2,N_obs);
+
+%% Initialize i_minus_1 (ONLY FOR FIRST TIME!)
+t_i_minus_1 = t_obs(1);
+X_star_input_ti_minus_1 = IC.y0;
+P_cov_i_minus_1 = P_bar_cov_0;
+% x_hat_correction_i_minus_1 = x_bar_correction_0; % Omitted in EKF
+
+%% Initial Observation at t=0
+if t_obs(1) == 0 
+    % 1. Standard Setup (Always do this)
+    station_id = ENV.ref_data.Actual_Measurements.station_id(1);
+    Y_1 = ENV.ref_data.Actual_Measurements{1, {'apparent_range_km', 'apparent_range_rate_km_s'}}(:);
+    R_1 = IC.Stations(station_id).Covariance;
+    
+    date_time_0 = IC.UTC_epoch; 
+    EOP_params_0 = Tools.interpolate_EOP(date_time_0, "IERS");
+    [r_stn_0, v_stn_0] = Tools.ECEF_ECI_Converter(IC.Stations(station_id).r_ECEF_km, zeros(3,1), date_time_0, "ECEF_to_ECI", EOP_params_0);
+
+    % 2. Pre-fit Residual (Always based on the original IC)
+    Y_comp_0 = ENV.MeasFcn(X_star_0(1:3), X_star_0(4:6), r_stn_0, v_stn_0);
+    Y_prefit_computed_observations(:,1) = Y_comp_0;
+    y_residuals_0 = Y_1 - Y_comp_0;
+
+    % 3. Check if this station is "Active"
+    update_t0 = false;
+    if strcmp(active_station_mode, 'All') || (station_id == station_map.(active_station_mode))
+        update_t0 = true;
+    end
+
+    if update_t0
+        % --- UPDATE MODE ---
+        H_0 = ENV.HmatrixFcn(X_star_0(1:3), X_star_0(4:6), r_stn_0, v_stn_0);
+        K_0 = P_bar_cov_0 * H_0' / (H_0 * P_bar_cov_0 * H_0' + R_1);
+        
+        % Update State and Covariance
+        x_hat_0 = K_0 * y_residuals_0; 
+        X_corrected_0 = X_star_0 + x_hat_0;
+        I = eye(N_states);
+        P_cov_i_minus_1 = (I - K_0 * H_0) * P_bar_cov_0 * (I - K_0 * H_0)' + K_0 * R_1 * K_0';
+    else
+        % --- PASSIVE MODE ---
+        % No correction applied to the state
+        X_corrected_0 = X_star_0; 
+        % Covariance remains the A-Priori P
+        P_cov_i_minus_1 = P_bar_cov_0; 
+    end
+
+    % 4. Post-fit calculation (Using whatever the state is now)
+    Y_post = ENV.MeasFcn(X_corrected_0(1:3), X_corrected_0(4:6), r_stn_0, v_stn_0);
+    Y_postfit_computed_observations(:, 1) = Y_post;
+    
+    % 5. Prepare for the first ODE step
+    X_star_input_ti_minus_1 = [X_corrected_0; STM_t0_t0(:)];
+    
+    fprintf('t=0 (i=1) Processing Complete. Update Applied: %s\n', string(update_t0));
+end
+
+%% Start for-loop
+for i = 2:length(t_obs)
+
+    % CHECK IF WE SHOULD UPDATE THIS STEP!
+    update_this_step = false;
+    if strcmp(active_station_mode, 'All')
+        update_this_step = true;
+    elseif station_id == station_map.(active_station_mode)
+        update_this_step = true;
+    end
+
+%% Read Next Observation Y_i and R_i
+
+t_i = t_obs(i);
+t_i_minus_1 = t_obs(i-1);
+station_id = ENV.ref_data.Actual_Measurements.station_id(i);
+Y_i = ENV.ref_data.Actual_Measurements{i, {'apparent_range_km', 'apparent_range_rate_km_s'}}(:);
+R_conv_i = IC.Stations(station_id).Covariance;
+
+%% Propogate to Observation Time t_1
+
+[t,y] = ode45(@(t,X) jah_sat_1_ode( ...
+    t, X, ENV.AccelFcn, ENV.AmatrixFcn, IC.time_struct.jd_UTC_days), ...
+    [t_i_minus_1,t_i], X_star_input_ti_minus_1, options);
+
+r_sat_t_i_ECI_km = y(end,1:3)';
+v_sat_t_i_ECI_km_s = y(end,4:6)';
+full_orbit_ECI = y(:,1:6); % For plotting the orbit path in ECI
+X_star_ti = y(end,1:N_states)';
+STM_t_i_t_i_minus_1 = reshape(y(end,N_states+1:end), N_states, N_states);
+
+% Visuals.plot_position(r_sat_t_i_ECI_km, v_sat_t_i_ECI_km_s, P_cov_i_minus_1, full_orbit_ECI);
+
+%% Time Update of State Estimate and Covariance + PROCESS NOISE!
+% x_bar_correction_i = STM_t_i_t_i_minus_1 * x_hat_correction_i_minus_1; %
+% Omitted from EKF
+
+delta_t = t_i - t_i_minus_1;
+Q_matrix = eye(3) * IC.Sigma_Accel_km_s2^2;
+
+State_Noise_Compensation_6x6 = delta_t^2 *  [(delta_t^2/4)*Q_matrix, (delta_t/2)*Q_matrix;
+                                             (delta_t/2)*Q_matrix, (1)*Q_matrix ];
+
+State_Noise_Compensation_7x7 = zeros(N_states, N_states); % Pad to 7x7 (assuming no process noise on the 7th state, Cd)
+State_Noise_Compensation_7x7(1:6, 1:6) = State_Noise_Compensation_6x6;
+
+
+P_bar_cov_i = STM_t_i_t_i_minus_1 * P_cov_i_minus_1 * STM_t_i_t_i_minus_1' + State_Noise_Compensation_7x7;
+
+%% Compute observation deviation, observation state matrix, gain matrix
+
+date_time_i = IC.UTC_epoch + seconds(t_i);
+EOP_params_i = Tools.interpolate_EOP(date_time_i, "IERS");
+[r_station_t_i_ECI_km, v_station_t_i_ECI_km] = Tools.ECEF_ECI_Converter(IC.Stations(station_id).r_ECEF_km,zeros(3,1),date_time_i,"ECEF_to_ECI",EOP_params_i);
+computed_observation_i = ENV.MeasFcn(r_sat_t_i_ECI_km,v_sat_t_i_ECI_km_s,r_station_t_i_ECI_km,v_station_t_i_ECI_km);
+Y_prefit_computed_observations(:,i) = computed_observation_i;
+y_residuals_i = Y_i - ENV.MeasFcn(r_sat_t_i_ECI_km,v_sat_t_i_ECI_km_s,r_station_t_i_ECI_km,v_station_t_i_ECI_km);
+
+%% Kalman Update??
+if update_this_step
+    H_tilde_i = ENV.HmatrixFcn(r_sat_t_i_ECI_km,v_sat_t_i_ECI_km_s,r_station_t_i_ECI_km,v_station_t_i_ECI_km);
+    K_i = P_bar_cov_i * H_tilde_i' / (H_tilde_i * P_bar_cov_i * H_tilde_i' + R_conv_i);
+    x_hat_correction_i = K_i * (y_residuals_i); % This is EKF unique
+    X_star_ti = X_star_ti + x_hat_correction_i;
+
+    I = eye(N_states);
+    % P_cov_i = (I - K_i * H_tilde_i) * P_bar_cov_i;
+    % Use the Joseph Form to ensure PSD!
+    % Measurement Update of Covariance (Joseph Form)
+    P_cov_i = (I - K_i * H_tilde_i) * P_bar_cov_i * (I - K_i * H_tilde_i)' + K_i * R_conv_i * K_i';
+    P_cov_i = 0.5 * (P_cov_i + P_cov_i');
+else
+    P_cov_i = P_bar_cov_i; % No update to covariance if not updating this step
+    x_hat_correction_i = zeros(N_states,1); % No correction if not updating
+end
+
+
+%% Post-fit calculation
+% 1. Get the updated total state
+% In your EKF, X_star_ti has already been updated with the correction!
+X_updated = X_star_ti; 
+
+% 2. Re-compute observation with updated state
+Y_post = ENV.MeasFcn(X_updated(1:3), X_updated(4:6), r_station_t_i_ECI_km, v_station_t_i_ECI_km);
+Y_postfit_computed_observations(:, i) = Y_post;
+
+
+%% Print Results
+if print_updates || (mod(i,20) == 0)
+    disp('State Estimate Correction at t_i:');
+    disp(x_hat_correction_i);
+    disp('Covariance Matrix at t_i:');
+    disp(P_cov_i);
+    fprintf('Step %d of %d complete. Time: %.2f sec\n', i, length(t_obs), t_i);
+    disp('State Correction:'); disp(x_hat_correction_i');
+    
+    % This will pause execution until you press any key in the Command Window
+    % disp('Press any key to continue to the next observation...');
+    % pause;
+
+end
+
+%% Update for next iteration
+
+% Extract the nominal state from the end of the current ODE integration
+STM_reset = eye(N_states);
+X_star_input_ti_minus_1 = [X_star_ti;STM_reset(:)];
+
+% Pass the updated covariance and state deviation to the next step
+P_cov_i_minus_1 = P_cov_i;
+% x_hat_correction_i_minus_1 = x_hat_correction_i; % Shouldn't need this
+% actually
+
+%% END FOR LOOP
+end
+
+%% Plot Position RIC graphs
+Visuals.plot_position(r_sat_t_i_ECI_km, v_sat_t_i_ECI_km_s, P_cov_i_minus_1, full_orbit_ECI);
+
+%% Plot Pre-fit Residuals (Y - h(X_bar)) --> How did dynamic model do?
+
+Measurement_Table = Visuals.make_measurement_table(t_obs,ENV.ref_data.Actual_Measurements,Y_prefit_computed_observations'); % Ensure correct dimensions!
+Visuals.plot_station_residuals(Measurement_Table, {IC.Stations.Name});
+Visuals.plot_measurement_correlation_linked(Measurement_Table);
+
+%% Plot Post-fit Residuals (Y - h(X_hat)) --> How well did filter do?
+Post_Measurement_Table = Visuals.make_measurement_table(t_obs, ENV.ref_data.Actual_Measurements, Y_postfit_computed_observations');
+% Visuals.plot_station_residuals_3_sigma(Post_Measurement_Table, {IC.Stations.Name},IC);
+Visuals.plot_station_residuals(Post_Measurement_Table, {IC.Stations.Name});
+Visuals.plot_measurement_correlation_linked(Measurement_Table);
+
+%% Compute RMS of pre-fit and post-fit residuals
+range_residuals = Measurement_Table.apparent_range_km - Measurement_Table.computed_range_km;
+range_rate_residuals = Measurement_Table.apparent_range_rate_km_s - Measurement_Table.computed_range_rate_km_s;
+RMS_range_prefit = sqrt(mean(range_residuals.^2));
+RMS_range_rate_prefit = sqrt(mean(range_rate_residuals.^2));
+range_residuals_post = Post_Measurement_Table.apparent_range_km - Post_Measurement_Table.computed_range_km;
+range_rate_residuals_post = Post_Measurement_Table.apparent_range_rate_km_s - Post_Measurement_Table.computed_range_rate_km_s;
+RMS_range_postfit = sqrt(mean(range_residuals_post.^2));  
+RMS_range_rate_postfit = sqrt(mean(range_rate_residuals_post.^2));  
+
+fprintf('RMS of Range Residuals (Prefit): %.6f km\n', RMS_range_prefit);
+fprintf('RMS of Range Rate Residuals (Prefit): %.6f km/s\n', RMS_range_rate_prefit);
+fprintf('RMS of Range Residuals (Postfit): %.6f km\n', RMS_range_postfit);
+fprintf('RMS of Range Rate Residuals (Postfit): %.6f km/s\n', RMS_range_rate_postfit);
+
+%% Now, propagate state and covariance to dV1 = 30 March 2018, 08:55:03 UTC.
+
+% Time of dV1 in seconds past epoch
+t_dV1 = datetime(2018,3,30,8,55,3,"TimeZone","UTC") - IC.UTC_epoch; % This gives a duration object
+t_dV1_sec = seconds(t_dV1); % Convert to seconds
+
+% X_star_input_ti_minus_1 is already set to the last updated state from the EKF loop
+
+% Propogate to Observation Time t_1
+X_star_propagation_step = X_star_input_ti_minus_1; % Start from the last updated state
+
+[t_prop_dV1,y_prop_dV1] = ode45(@(t,X) jah_sat_1_ode( ...
+    t, X, ENV.AccelFcn, ENV.AmatrixFcn, IC.time_struct.jd_UTC_days), ...
+    [t_i,t_dV1_sec], X_star_propagation_step, options);
+
+r_sat_t_dV1_ECI_km = y_prop_dV1(end,1:3)';
+v_sat_t_dV1_ECI_km_s = y_prop_dV1(end,4:6)';
+full_orbit_ECI = y_prop_dV1(:,1:6); % For plotting the orbit path in ECI
+X_star_dV1 = y_prop_dV1(end,1:N_states)';
+STM_t_dV1_t_i = reshape(y_prop_dV1(end,N_states+1:end), N_states, N_states);
+
+% Time Update of State Estimate and Covariance + PROCESS NOISE!
+% x_bar_correction_i = STM_t_i_t_i_minus_1 * x_hat_correction_i_minus_1; %
+% Omitted from EKF
+
+delta_t = t_dV1_sec - t_i;
+Q_matrix = eye(3) * IC.Sigma_Accel_km_s2^2;
+
+State_Noise_Compensation_6x6 = delta_t^2 *  [(delta_t^2/4)*Q_matrix, (delta_t/2)*Q_matrix;
+                                             (delta_t/2)*Q_matrix, (1)*Q_matrix ];
+
+State_Noise_Compensation_7x7 = zeros(N_states, N_states); % Pad to 7x7 (assuming no process noise on the 7th state, Cd)
+State_Noise_Compensation_7x7(1:6, 1:6) = State_Noise_Compensation_6x6;
+
+P_bar_cov_dV1 = STM_t_dV1_t_i * P_cov_i_minus_1 * STM_t_dV1_t_i' + State_Noise_Compensation_7x7;
+
+Visuals.plot_RIC(r_sat_t_dV1_ECI_km, v_sat_t_dV1_ECI_km_s, P_bar_cov_dV1, full_orbit_ECI,false);
+
+%% Save all data to a .mat file for later analysis and plotting!
+timestamp = string(datetime('now', 'Format', 'yyyy-MM-dd_HH-mm-ss'));
+file_name = sprintf('Results/EKF_Results_%s_station_%s_data_%s.mat', active_station_mode, data_inclusion_mode, timestamp);
+save(file_name);
