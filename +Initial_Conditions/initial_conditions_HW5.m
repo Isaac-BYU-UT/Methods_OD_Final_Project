@@ -27,7 +27,7 @@ drag_coefficient_std = .05; % THIS IS JUST A GUESS!
 IC.P_Covariance_States = diag([position_std_km^2, position_std_km^2, position_std_km^2, ...
                             velocity_std_km_s^2, velocity_std_km_s^2, velocity_std_km_s^2, ...
                             drag_coefficient_std^2]);
-IC.Sigma_Accel_km_s2 = 10e-8; % TODO: TUNE THIS GUESS!
+IC.Sigma_Accel_km_s2 = 10e-9; % TODO: TUNE THIS GUESS! % If we go larger than 10e-8, we get problems!
 
 %  STATIONS (ECEF)
 % ========================

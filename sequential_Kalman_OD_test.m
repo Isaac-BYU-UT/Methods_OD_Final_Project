@@ -1,3 +1,4 @@
+% CONVENTIONAL SEQUENTIAL KALMAN FILTER
 clear; clc;
 % This is just section 4.7 from Schutz "Statistical Orbit Determination"!
 %% Load Initial Conditions
@@ -15,14 +16,113 @@ IC.y0 = [X_star_0; STM_t0_t0(:)]; % For input into ODE
 P_bar_cov_0 = IC.P_Covariance_States; % This is the covariance matrix of the initial state estimate at epoch (7x7)
 % TODO: ADD STATE PROCESS NOISE!!!
 x_bar_correction_0 = zeros(N_states,1);
+
+
 %% Set Initial Observation Times (ONLY FOR FIRST ROUND!)
 t_obs = ENV.ref_data.Actual_Measurements.time_sec_past_epoch;
+N_obs = length(t_obs);
+
+%% Create storage vector for computed observations!
+
+Y_prefit_computed_observations = zeros(2,N_obs); % To store computed observations for each time step
+Y_postfit_computed_observations = zeros(2,N_obs);
 
 %% Initialize i_minus_1 (ONLY FOR FIRST TIME!)
 t_i_minus_1 = t_obs(1);
 X_star_input_ti_minus_1 = IC.y0;
 P_cov_i_minus_1 = P_bar_cov_0;
 x_hat_correction_i_minus_1 = x_bar_correction_0;
+
+
+%% Initial Observation at t=0 (First Step)
+% Check if the first observation is indeed at the epoch
+if t_obs(1) == 0  % Or whatever your epoch time is
+    %% EKF
+    % % 1. Get observation data for i=1
+    % station_id = ENV.ref_data.Actual_Measurements.station_id(1);
+    % Y_1 = ENV.ref_data.Actual_Measurements{1, {'apparent_range_km', 'apparent_range_rate_km_s'}}(:);
+    % R_1 = IC.Stations(station_id).Covariance;
+    % 
+    % % 2. Get Station position at t=0
+    % date_time_0 = IC.UTC_epoch; 
+    % EOP_params_0 = Tools.interpolate_EOP(date_time_0, "IERS");
+    % [r_stn_0, v_stn_0] = Tools.ECEF_ECI_Converter(IC.Stations(station_id).r_ECEF_km, zeros(3,1), date_time_0, "ECEF_to_ECI", EOP_params_0);
+    % 
+    % % 3. Compute H and Residuals using Initial Conditions (X_star_0)
+    % Y_comp_0 = ENV.MeasFcn(IC.r_sat_ECI_km, IC.v_sat_ECI_km_s, r_stn_0, v_stn_0);
+    % y_resid_0 = Y_1 - Y_comp_0;
+    % H_0 = ENV.HmatrixFcn(IC.r_sat_ECI_km, IC.v_sat_ECI_km_s, r_stn_0, v_stn_0);
+    % 
+    % % 4. Kalman Gain
+    % K_0 = P_bar_cov_0 * H_0' / (H_0 * P_bar_cov_0 * H_0' + R_1);
+    % 
+    % % 5. Update State and Covariance
+    % % Since x_bar_correction_0 is zero, the update is simplified:
+    % x_hat_correction_i_minus_1 = K_0 * y_resid_0; 
+    % 
+    % % Joseph Form for Covariance
+    % I = eye(N_states);
+    % P_cov_i_minus_1 = (I - K_0 * H_0) * P_bar_cov_0 * (I - K_0 * H_0)' + K_0 * R_1 * K_0';
+    % 
+    % % Update the nominal state for the first propagation
+    % X_star_input_ti_minus_1(1:N_states) = X_star_0 + x_hat_correction_i_minus_1;
+    % 
+    % % Store the computed observation for plotting
+    % Y_computed_observations(:,1) = Y_comp_0;
+
+    %% Conventional
+    % Initial Observation at t=0 (Conventional/Linearized KF)
+    % In a conventional/linearized filter, we do NOT update X_star. 
+    % We only update the state deviation (x_hat) and covariance (P).
+
+    % 1. Get observation data and station info for t=0
+    station_id = ENV.ref_data.Actual_Measurements.station_id(1);
+    Y_1 = ENV.ref_data.Actual_Measurements{1, {'apparent_range_km', 'apparent_range_rate_km_s'}}(:);
+    R_1 = IC.Stations(station_id).Covariance;
+    
+    date_time_0 = IC.UTC_epoch;
+    EOP_params_0 = Tools.interpolate_EOP(date_time_0, "IERS");
+    [r_stn_0, v_stn_0] = Tools.ECEF_ECI_Converter(IC.Stations(station_id).r_ECEF_km, ...
+                         zeros(3,1), date_time_0, "ECEF_to_ECI", EOP_params_0);
+
+    % 2. Compute the observation matrix (H) and prefit residual (y)
+    % We use the initial reference state (X_star_0)
+    Y_comp_0 = ENV.MeasFcn(X_star_0(1:3), X_star_0(4:6), r_stn_0, v_stn_0);
+    H_0 = ENV.HmatrixFcn(X_star_0(1:3), X_star_0(4:6), r_stn_0, v_stn_0);
+    
+    % Prefit residual (Innovation)
+    y_residuals_0 = Y_1 - Y_comp_0;
+    Y_prefit_computed_observations(:,1) = Y_comp_0;
+
+    % 3. Kalman Gain
+    K_0 = P_bar_cov_0 * H_0' / (H_0 * P_bar_cov_0 * H_0' + R_1);
+
+    % 4. Update State Correction and Covariance
+    % Formula: x_hat = x_bar + K * (y - H*x_bar)
+    % At t=0, x_bar (x_bar_correction_0) is typically zeros.
+    x_hat_correction_i_minus_1 = x_bar_correction_0 + K_0 * (y_residuals_0 - H_0 * x_bar_correction_0);
+
+    % 5. Update Covariance (Joseph Form)
+    I = eye(N_states);
+    P_cov_i_minus_1 = (I - K_0 * H_0) * P_bar_cov_0 * (I - K_0 * H_0)' + K_0 * R_1 * K_0';
+    
+    % CRITICAL FOR CONVENTIONAL/LKF: 
+    % We do NOT add x_hat to X_star. The ODE will continue to use the original 
+    % uncorrected X_star_0 as the integration base.
+    X_star_input_ti_minus_1 = [X_star_0; STM_t0_t0(:)]; 
+
+    %% Post-fit calculation
+    % 1. Get the updated total state
+    % Note: for EKF this is X_star_ti (already updated), for CKF it is X_star_ti + x_hat
+    X_updated = X_star_0 + x_hat_correction_i_minus_1; 
+    
+    % 2. Re-compute observation with updated state
+    % We keep the station position/velocity from the pre-fit calculation
+    Y_post = ENV.MeasFcn(X_updated(1:3), X_updated(4:6), r_stn_0, v_stn_0);
+    Y_postfit_computed_observations(:, 1) = Y_post; % Use index 1, not i
+    
+    fprintf('t=0 (i=1) Conventional Update Complete.\n');
+end
 
 %% Start for-loop
 for i = 2:length(t_obs)
@@ -69,7 +169,9 @@ P_bar_cov_i = STM_t_i_t_i_minus_1 * P_cov_i_minus_1 * STM_t_i_t_i_minus_1' + Sta
 date_time_i = IC.UTC_epoch + seconds(t_i);
 EOP_params_i = Tools.interpolate_EOP(date_time_i, "IERS");
 [r_station_t_i_ECI_km, v_station_t_i_ECI_km] = Tools.ECEF_ECI_Converter(IC.Stations(station_id).r_ECEF_km,zeros(3,1),date_time_i,"ECEF_to_ECI",EOP_params_i);
-y_residuals_i = Y_i - ENV.MeasFcn(r_sat_t_i_ECI_km,v_sat_t_i_ECI_km_s,r_station_t_i_ECI_km,v_station_t_i_ECI_km);
+computed_observation_i = ENV.MeasFcn(r_sat_t_i_ECI_km,v_sat_t_i_ECI_km_s,r_station_t_i_ECI_km,v_station_t_i_ECI_km);
+Y_prefit_computed_observations(:,i) = computed_observation_i;
+y_residuals_i = Y_i - computed_observation_i;
 H_tilde_i = ENV.HmatrixFcn(r_sat_t_i_ECI_km,v_sat_t_i_ECI_km_s,r_station_t_i_ECI_km,v_station_t_i_ECI_km);
 K_i = P_bar_cov_i * H_tilde_i' / (H_tilde_i * P_bar_cov_i * H_tilde_i' + R_conv_i);
 
@@ -82,6 +184,15 @@ I = eye(N_states);
 P_cov_i = (I - K_i * H_tilde_i) * P_bar_cov_i * (I - K_i * H_tilde_i)' + K_i * R_conv_i * K_i';
 P_cov_i = 0.5 * (P_cov_i + P_cov_i');
 
+%% Post-fit calculation
+% 1. Get the updated total state
+% Note: for EKF this is X_star_ti (already updated), for CKF it is X_star_ti + x_hat
+X_updated = X_star_ti + x_hat_correction_i; 
+
+% 2. Re-compute observation with updated state
+% We keep the station position/velocity from the pre-fit calculation
+Y_post = ENV.MeasFcn(X_updated(1:3), X_updated(4:6), r_station_t_i_ECI_km, v_station_t_i_ECI_km);
+Y_postfit_computed_observations(:, i) = Y_post;
 
 %% Print Results
 disp('State Estimate Correction at t_i:');
@@ -110,6 +221,19 @@ x_hat_correction_i_minus_1 = x_hat_correction_i;
 %% END FOR LOOP
 end
 
-%% Plots and Analysis
+%% Plot Position RIC graphs
 Visuals.plot_position(r_sat_t_i_ECI_km, v_sat_t_i_ECI_km_s, P_cov_i_minus_1, full_orbit_ECI);
+
+%% Plot Pre-fit Residuals (Y - h(X_bar)) --> How did dynamic model do?
+
+Measurement_Table = Visuals.make_measurement_table(t_obs,ENV.ref_data.Actual_Measurements,Y_prefit_computed_observations'); % Ensure correct dimensions!
+Visuals.plot_station_residuals(Measurement_Table, {IC.Stations.Name});
+Visuals.plot_measurement_correlation_linked(Measurement_Table);
+
+%% Plot Post-fit Residuals (Y - h(X_hat)) --> How well did filter do?
+Post_Measurement_Table = Visuals.make_measurement_table(t_obs, ENV.ref_data.Actual_Measurements, Y_postfit_computed_observations');
+Visuals.plot_station_residuals(Post_Measurement_Table, {IC.Stations.Name});
+
+
+
 

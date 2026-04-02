@@ -1,5 +1,6 @@
+% EXTENDED KALMAN FILTER!
 clear; clc;
-% This is just section 4.7 from Schutz "Statistical Orbit Determination"!
+% This is just section 4.7.3 from Schutz "Statistical Orbit Determination"!
 %% Load Initial Conditions
 IC = Initial_Conditions.initial_conditions_HW5();
 %% Setup Environment
@@ -13,15 +14,71 @@ IC.y0 = [X_star_0; STM_t0_t0(:)]; % For input into ODE
 
 % A priori information
 P_bar_cov_0 = IC.P_Covariance_States; % This is the covariance matrix of the initial state estimate at epoch (7x7)
-% x_bar_correction_0 = zeros(N_states,1); % Omitted in EKF?
+% x_bar_correction_0 = zeros(N_states,1); % Omitted in EKF
 %% Set Initial Observation Times (ONLY FOR FIRST ROUND!)
 t_obs = ENV.ref_data.Actual_Measurements.time_sec_past_epoch;
+N_obs = length(t_obs);
+
+%% Create storage vector for computed observations!
+
+Y_prefit_computed_observations = zeros(2,N_obs); % To store computed observations for each time step
+Y_postfit_computed_observations = zeros(2,N_obs);
 
 %% Initialize i_minus_1 (ONLY FOR FIRST TIME!)
 t_i_minus_1 = t_obs(1);
 X_star_input_ti_minus_1 = IC.y0;
 P_cov_i_minus_1 = P_bar_cov_0;
-x_hat_correction_i_minus_1 = x_bar_correction_0;
+% x_hat_correction_i_minus_1 = x_bar_correction_0; % Omitted in EKF
+
+%% Initial Observation at t=0 (First Step)
+% Check if the first observation is indeed at the epoch
+if t_obs(1) == 0  % Or whatever your epoch time is
+    %% EKF
+    % 1. Get observation data and station info for t=0
+    station_id = ENV.ref_data.Actual_Measurements.station_id(1);
+    Y_1 = ENV.ref_data.Actual_Measurements{1, {'apparent_range_km', 'apparent_range_rate_km_s'}}(:);
+    R_1 = IC.Stations(station_id).Covariance;
+
+    date_time_0 = IC.UTC_epoch; 
+    EOP_params_0 = Tools.interpolate_EOP(date_time_0, "IERS");
+    [r_stn_0, v_stn_0] = Tools.ECEF_ECI_Converter(IC.Stations(station_id).r_ECEF_km, zeros(3,1), date_time_0, "ECEF_to_ECI", EOP_params_0);
+
+    % 2. Compute the observation matrix (H) and prefit residual (y)
+    % We use the initial reference state (X_star_0)
+    Y_comp_0 = ENV.MeasFcn(X_star_0(1:3), X_star_0(4:6), r_stn_0, v_stn_0);
+    H_0 = ENV.HmatrixFcn(X_star_0(1:3), X_star_0(4:6), r_stn_0, v_stn_0);
+
+    % Prefit residual (Innovation)
+    y_residuals_0 = Y_1 - Y_comp_0;
+    Y_prefit_computed_observations(:,1) = Y_comp_0;
+
+    % 3. Kalman Gain
+    K_0 = P_bar_cov_0 * H_0' / (H_0 * P_bar_cov_0 * H_0' + R_1);
+
+    % 4. Update State and Covariance
+    % Since x_bar_correction_0 is zero, the update is simplified:
+    x_hat_correction_i_minus_1 = K_0 * y_residuals_0; 
+
+     % 5. Update Covariance (Joseph Form)
+    I = eye(N_states);
+    P_cov_i_minus_1 = (I - K_0 * H_0) * P_bar_cov_0 * (I - K_0 * H_0)' + K_0 * R_1 * K_0';
+
+    % Update the nominal state for the first propagation
+    X_star_input_ti_minus_1(1:N_states) = X_star_0 + x_hat_correction_i_minus_1;
+
+     %% Post-fit calculation
+    % 1. Get the updated total state
+    % Note: for EKF this is X_star_ti (already updated), for CKF it is X_star_ti + x_hat
+    X_updated = X_star_input_ti_minus_1(1:N_states); 
+    
+    % 2. Re-compute observation with updated state
+    % We keep the station position/velocity from the pre-fit calculation
+    Y_post = ENV.MeasFcn(X_updated(1:3), X_updated(4:6), r_stn_0, v_stn_0);
+    Y_postfit_computed_observations(:, 1) = Y_post; % Use index 1, not i
+    
+    fprintf('t=0 (i=1) EKF Update Complete.\n');
+    
+end
 
 %% Start for-loop
 for i = 2:length(t_obs)
@@ -75,6 +132,7 @@ K_i = P_bar_cov_i * H_tilde_i' / (H_tilde_i * P_bar_cov_i * H_tilde_i' + R_conv_
 
 %% Measurement Update of State Estimate and Covariance
 x_hat_correction_i = K_i * (y_residuals_i); % This is EKF unique
+X_star_ti = X_star_ti + x_hat_correction_i;
 
 I = eye(N_states);
 % P_cov_i = (I - K_i * H_tilde_i) * P_bar_cov_i;
@@ -101,9 +159,8 @@ disp('State Correction:'); disp(x_hat_correction_i');
 %% Update for next iteration
 
 % Extract the nominal state from the end of the current ODE integration
-X_star_input_ti_minus_1 = y(end,:)';
 STM_reset = eye(N_states);
-X_star_input_ti_minus_1(N_states+1:end) = STM_reset(:);
+X_star_input_ti_minus_1 = [X_star_ti;STM_reset(:)];
 
 % Pass the updated covariance and state deviation to the next step
 P_cov_i_minus_1 = P_cov_i;
@@ -112,5 +169,6 @@ x_hat_correction_i_minus_1 = x_hat_correction_i;
 %% END FOR LOOP
 end
 
+%% Plots and Analysis
 Visuals.plot_position(r_sat_t_i_ECI_km, v_sat_t_i_ECI_km_s, P_cov_i_minus_1, full_orbit_ECI);
 
