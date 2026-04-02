@@ -194,3 +194,18 @@ Visuals.plot_measurement_correlation_linked(Measurement_Table);
 Post_Measurement_Table = Visuals.make_measurement_table(t_obs, ENV.ref_data.Actual_Measurements, Y_postfit_computed_observations');
 Visuals.plot_station_residuals_3_sigma(Post_Measurement_Table, {IC.Stations.Name},IC);
 Visuals.plot_measurement_correlation_linked(Measurement_Table);
+
+%% Compute RMS of pre-fit and post-fit residuals
+range_residuals = Measurement_Table.apparent_range_km - Measurement_Table.computed_range_km;
+range_rate_residuals = Measurement_Table.apparent_range_rate_km_s - Measurement_Table.computed_range_rate_km_s;
+RMS_range_prefit = sqrt(mean(range_residuals.^2));
+RMS_range_rate_prefit = sqrt(mean(range_rate_residuals.^2));
+range_residuals_post = Post_Measurement_Table.apparent_range_km - Post_Measurement_Table.computed_range_km;
+range_rate_residuals_post = Post_Measurement_Table.apparent_range_rate_km_s - Post_Measurement_Table.computed_range_rate_km_s;
+RMS_range_postfit = sqrt(mean(range_residuals_post.^2));  
+RMS_range_rate_postfit = sqrt(mean(range_rate_residuals_post.^2));  
+
+fprintf('RMS of Range Residuals (Prefit): %.6f km\n', RMS_range_prefit);
+fprintf('RMS of Range Rate Residuals (Prefit): %.6f km/s\n', RMS_range_rate_prefit);
+fprintf('RMS of Range Residuals (Postfit): %.6f km\n', RMS_range_postfit);
+fprintf('RMS of Range Rate Residuals (Postfit): %.6f km/s\n', RMS_range_rate_postfit);
