@@ -9,7 +9,7 @@ function plot_station_residuals(Measurement_Table, station_names)
     u_stations = unique(Measurement_Table.station_id);
     
     % Setup Figure
-    figure('Color', 'w', 'Position', [100, 100, 1000, 800]);
+    figure('Color', 'w');
     colors = lines(length(u_stations)); % Distinct color palette
     
     % --- Top Subplot: Range Residuals ---

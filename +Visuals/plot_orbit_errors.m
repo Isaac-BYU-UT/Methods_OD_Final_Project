@@ -20,7 +20,7 @@ function plot_orbit_errors(r_ECI, v_ECI, P_ECI)
     pairs = [1,2; 1,3; 3,2]; % R-S, R-W, W-S
     titles = {'Radial vs Intrack', 'Radial vs Crosstrack', 'Crosstrack vs Intrack'};
     
-    figure('Color', 'w', 'Position', [100, 100, 1200, 400]);
+    figure('Color', 'w');
     
     for i = 1:3
         subplot(1, 3, i);

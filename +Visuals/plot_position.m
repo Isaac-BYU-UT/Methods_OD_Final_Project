@@ -27,7 +27,7 @@ function plot_position(r_ECI, v_ECI, P_ECI, full_orbit_ECI)
     pairs = [1,2; 1,3; 3,2]; 
     titles = {'Radial vs Intrack', 'Radial vs Crosstrack', 'Crosstrack vs Intrack'};
     
-    figure('Color', 'w', 'Position', [100, 100, 1400, 450]);
+    figure('Color', 'w');
     
     for i = 1:3
         subplot(1, 3, i); hold on;

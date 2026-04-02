@@ -1,0 +1,63 @@
+function IC = initial_conditions_HW5()
+
+IC.name = 'HW5';
+IC.description = 'Initial conditions for Homework 5';    
+
+IC.plotting_histograms = false;
+
+%  EPOCH
+% ========================
+IC.UTC_epoch = datetime(2018, 2, 1, 5, 0, 0.0, 'TimeZone','UTC');
+IC.time_struct = Tools.ComputeTimeSystems(IC.UTC_epoch);
+
+%  SATELLITE INITIAL STATE
+% ========================
+IC.r_sat_ECI_km = [6990077.798814194;1617465.311978378;22679.810569245355] ...
+                    * Constants.METERS_TO_KM;
+
+IC.v_sat_ECI_km_s = [-1675.13972506056;7273.72441330686;252.688512916741] ...
+                    * Constants.METERS_TO_KM;
+
+IC.C_drag = 1.88;
+
+%  STATIONS (ECEF)
+% ========================
+station_names = {'Atoll', 'Diego Garcia', 'Arecibo'};
+
+raw_coords_ECEF_m = [
+    -6143584,  1364250,  1033743;
+     1907295,  6030810,  -817119;
+     2390310, -5564341,  1994578
+];
+
+IC.Stations = struct();
+
+% Each station has zero mean noise, range_std = 5 m and range-rate std = 1.0 mm/sec
+% TODO : For future version, each station will have a different covariance.
+
+Range_STD_Atoll_km = 5 * Constants.METERS_TO_KM;
+Range_Rate_STD_Atoll_km_s = 1.0 * Constants.METERS_TO_KM / 1000; % mm/s to km/s
+
+Range_STD_Diego_Garcia_km = 5 * Constants.METERS_TO_KM;
+Range_Rate_STD_Diego_Garcia_km_s = 1.0 * Constants.METERS_TO_KM / 1000; % mm/s to km/s
+
+Range_STD_Arecibo_km = 5 * Constants.METERS_TO_KM;
+Range_Rate_STD_Arecibo_km_s = 1.0 * Constants.METERS_TO_KM / 1000; % mm/s to km/s
+
+for i = 1:length(station_names)
+    IC.Stations(i).Name = station_names{i};
+    IC.Stations(i).r_ECEF_km = raw_coords_ECEF_m(i, :)' * Constants.METERS_TO_KM;
+end
+
+% Add covariance matrix for each station
+IC.Stations(1).Covariance = diag([Range_STD_Atoll_km^2, Range_Rate_STD_Atoll_km_s^2]);
+IC.Stations(2).Covariance = diag([Range_STD_Diego_Garcia_km^2, Range_Rate_STD_Diego_Garcia_km_s^2]);
+IC.Stations(3).Covariance = diag([Range_STD_Arecibo_km^2, Range_Rate_STD_Arecibo_km_s^2]);
+
+%  TIME SETTINGS (ODE)
+% ========================
+IC.time.end = 21600; % sec
+IC.time.dt  = 60;    % sec
+IC.time.tspan = 0:IC.time.dt:IC.time.end;
+
+end
