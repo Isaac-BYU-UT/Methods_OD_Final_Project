@@ -6,10 +6,10 @@ print_updates = false;
 % IC = Initial_Conditions.initial_conditions_HW5();
 % IC = Initial_Conditions.initial_conditions_HW5_EXCLUDE_RANGE();
 % IC = Initial_Conditions.initial_conditions_HW5_EXCLUDE_RANGE_RATE();
-% IC = Initial_Conditions.initial_conditions_Phase1();
+IC = Initial_Conditions.initial_conditions_Phase1();
 % IC = Initial_Conditions.initial_conditions_Phase1_EXCLUDE_RANGE_RATE();
-IC = Initial_Conditions.initial_conditions_Phase1_EXCLUDE_RANGE();
-data_inclusion_mode = 'Range_Rate'; % Options: 'None', 'Range', 'Range_Rate'
+% IC = Initial_Conditions.initial_conditions_Phase1_EXCLUDE_RANGE();
+data_inclusion_mode = 'None'; % Options: 'None', 'Range', 'Range_Rate'
 
 %% Setup Environment
 % ENV = Environment.setup_environment(IC);
@@ -288,59 +288,59 @@ timestamp = string(datetime('now', 'Format', 'yyyy-MM-dd_HH-mm-ss'));
 file_name = sprintf('Results/EKF_Results_%s_station_%s_data_%s.mat', active_station_mode, data_inclusion_mode, timestamp);
 save(file_name);
 
-%% --- FIXED AUTOMATED FIGURE EXPORT ---
-fprintf('\nExporting figures with descriptive names...\n');
-
-% 1. Define the names based on your script's execution order
-% Order: 1. Position RIC, 2. Prefit Residuals, 3. Prefit Correlation, 
-%        4. Postfit Residuals, 5. Postfit Correlation, 6. dV1 Propagation RIC
-custom_names = { ...
-    'Initial_Position_RIC_Orbit', ...
-    'Prefit_Residuals_Station_Breakdown', ...
-    'Prefit_Measurement_Correlation', ...
-    'Postfit_Residuals_Filter_Performance', ...
-    'Postfit_Measurement_Correlation', ...
-    'Final_dV1_Propagation_RIC' ...
-};
-
-% 2. Setup Export Metadata
-timestamp_str = datestr(now, 'yyyy-mm-dd_HHMM');
-base_folder = 'Figures';
-if ~exist(base_folder, 'dir'), mkdir(base_folder); end
-
-stations_str = strrep(active_station_mode, ' ', '_');
-data_type_str = strrep(data_inclusion_mode, ' ', '_');
-
-% 3. Get all open figures and SORT them by Number (important for order!)
-figHandles = findall(0, 'Type', 'figure');
-[~, idx] = sort([figHandles.Number]); 
-figHandles = figHandles(idx);
-
-% 4. Iterate and save
-for k = 1:length(figHandles)
-    thisFig = figHandles(k);
-    
-    % Determine the descriptive name
-    if k <= length(custom_names)
-        fig_title = custom_names{k};
-    else
-        % Fallback if you add more plots later
-        fig_title = sprintf('Extra_Figure_%d', thisFig.Number);
-    end
-    
-    % Construct filename
-    export_name = sprintf('%s/%s_%s_%s_%s.png', ...
-        base_folder, fig_title, stations_str, data_type_str, timestamp_str);
-    
-    % Save with high quality
-    try
-        % 'ContentType','vector' can be used for PDF, but for PNG we use Resolution
-        exportgraphics(thisFig, export_name, 'Resolution', 300);
-        fprintf('Saved: %s\n', export_name);
-    catch
-        saveas(thisFig, export_name);
-        fprintf('Saved (fallback): %s\n', export_name);
-    end
-end
-
-fprintf('Figure export complete. %d files saved to /%s.\n', length(figHandles), base_folder);
+% %% --- FIXED AUTOMATED FIGURE EXPORT ---
+% fprintf('\nExporting figures with descriptive names...\n');
+% 
+% % 1. Define the names based on your script's execution order
+% % Order: 1. Position RIC, 2. Prefit Residuals, 3. Prefit Correlation, 
+% %        4. Postfit Residuals, 5. Postfit Correlation, 6. dV1 Propagation RIC
+% custom_names = { ...
+%     'Initial_Position_RIC_Orbit', ...
+%     'Prefit_Residuals_Station_Breakdown', ...
+%     'Prefit_Measurement_Correlation', ...
+%     'Postfit_Residuals_Filter_Performance', ...
+%     'Postfit_Measurement_Correlation', ...
+%     'Final_dV1_Propagation_RIC' ...
+% };
+% 
+% % 2. Setup Export Metadata
+% timestamp_str = datestr(now, 'yyyy-mm-dd_HHMM');
+% base_folder = 'Figures';
+% if ~exist(base_folder, 'dir'), mkdir(base_folder); end
+% 
+% stations_str = strrep(active_station_mode, ' ', '_');
+% data_type_str = strrep(data_inclusion_mode, ' ', '_');
+% 
+% % 3. Get all open figures and SORT them by Number (important for order!)
+% figHandles = findall(0, 'Type', 'figure');
+% [~, idx] = sort([figHandles.Number]); 
+% figHandles = figHandles(idx);
+% 
+% % 4. Iterate and save
+% for k = 1:length(figHandles)
+%     thisFig = figHandles(k);
+% 
+%     % Determine the descriptive name
+%     if k <= length(custom_names)
+%         fig_title = custom_names{k};
+%     else
+%         % Fallback if you add more plots later
+%         fig_title = sprintf('Extra_Figure_%d', thisFig.Number);
+%     end
+% 
+%     % Construct filename
+%     export_name = sprintf('%s/%s_%s_%s_%s.png', ...
+%         base_folder, fig_title, stations_str, data_type_str, timestamp_str);
+% 
+%     % Save with high quality
+%     try
+%         % 'ContentType','vector' can be used for PDF, but for PNG we use Resolution
+%         exportgraphics(thisFig, export_name, 'Resolution', 300);
+%         fprintf('Saved: %s\n', export_name);
+%     catch
+%         saveas(thisFig, export_name);
+%         fprintf('Saved (fallback): %s\n', export_name);
+%     end
+% end
+% 
+% fprintf('Figure export complete. %d files saved to /%s.\n', length(figHandles), base_folder);
