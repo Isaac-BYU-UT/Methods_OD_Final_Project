@@ -7,11 +7,12 @@ syms C_drag real
 syms r_sun_rel_earth_ECI_km [3 1] real
 syms r_moon_rel_earth_ECI_km [3 1] real
 syms sat_is_illuminated
+syms R_ECEF_from_ECI [3 3] real
 
 X_states = [r_ECI_km; v_ECI_km_s; C_drag];
 
 a_2B = Forces.Gravity_2Body(r_ECI_km);
-a_Zonals = Forces.Gravity_Zonal(r_ECI_km, true, false, false); % J2, J3, J4 toggles.
+a_Zonals = Forces.Gravity_Zonal(r_ECI_km, R_ECEF_from_ECI, true, true, true); % J2, J3, J4 toggles.
 a_Drag = Forces.Atmospheric_Drag(r_ECI_km, v_ECI_km_s, C_drag, r_sun_rel_earth_ECI_km);
 a_LuniSolar = Forces.Luni_Solar_Pertubations(r_ECI_km, r_sun_rel_earth_ECI_km, r_moon_rel_earth_ECI_km);
 a_SRP = Forces.Solar_Radiation_Pressure(r_ECI_km, r_sun_rel_earth_ECI_km, sat_is_illuminated);
@@ -21,7 +22,7 @@ a_total = a_2B + a_Zonals + a_Drag + a_LuniSolar + a_SRP; % In the future state 
 F_dynamics = [v_ECI_km_s; a_total; 0];
 A_matrix = jacobian(F_dynamics, X_states); % The A matrix will just use pertubations, not EGM-96 20x20.
 
-Acceleration_Computation_func = matlabFunction(a_total, 'Vars', {r_ECI_km, v_ECI_km_s, C_drag, r_sun_rel_earth_ECI_km, r_moon_rel_earth_ECI_km,sat_is_illuminated});
-A_matrix_computation_func = matlabFunction(A_matrix, 'Vars', {r_ECI_km, v_ECI_km_s, C_drag, r_sun_rel_earth_ECI_km, r_moon_rel_earth_ECI_km,sat_is_illuminated});
+Acceleration_Computation_func = matlabFunction(a_total, 'Vars', {r_ECI_km, v_ECI_km_s, C_drag, r_sun_rel_earth_ECI_km, r_moon_rel_earth_ECI_km,sat_is_illuminated, R_ECEF_from_ECI});
+A_matrix_computation_func = matlabFunction(A_matrix, 'Vars', {r_ECI_km, v_ECI_km_s, C_drag, r_sun_rel_earth_ECI_km, r_moon_rel_earth_ECI_km,sat_is_illuminated, R_ECEF_from_ECI}); % TODO: Double check the approach of using this as a constant.
 
 end

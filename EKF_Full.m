@@ -142,7 +142,8 @@ State_Noise_Compensation_6x6 = delta_t^2 *  [(delta_t^2/4)*Q_matrix, (delta_t/2)
                                              (delta_t/2)*Q_matrix, (1)*Q_matrix ];
 
 State_Noise_Compensation_7x7 = zeros(N_states, N_states); % Pad to 7x7 (assuming no process noise on the 7th state, Cd)
-State_Noise_Compensation_7x7(1:6, 1:6) = State_Noise_Compensation_6x6;
+% State_Noise_Compensation_7x7(1:6, 1:6) = State_Noise_Compensation_6x6; %
+% TODO -- Turn process noise model back on later.
 
 
 P_bar_cov_i = STM_t_i_t_i_minus_1 * P_cov_i_minus_1 * STM_t_i_t_i_minus_1' + State_Noise_Compensation_7x7;
@@ -156,7 +157,7 @@ computed_observation_i = ENV.MeasFcn(r_sat_t_i_ECI_km,v_sat_t_i_ECI_km_s,r_stati
 Y_prefit_computed_observations(:,i) = computed_observation_i;
 y_residuals_i = Y_i - ENV.MeasFcn(r_sat_t_i_ECI_km,v_sat_t_i_ECI_km_s,r_station_t_i_ECI_km,v_station_t_i_ECI_km);
 
-%% Kalman Update??
+%% Kalman Update
 if update_this_step
     H_tilde_i = ENV.HmatrixFcn(r_sat_t_i_ECI_km,v_sat_t_i_ECI_km_s,r_station_t_i_ECI_km,v_station_t_i_ECI_km);
     K_i = P_bar_cov_i * H_tilde_i' / (H_tilde_i * P_bar_cov_i * H_tilde_i' + R_conv_i);

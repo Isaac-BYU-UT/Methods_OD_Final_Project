@@ -19,11 +19,16 @@ function dXdt = jah_sat_1_ode(t, X, accel_func,A_func,epoch_jd_UTC_days)
     [r_moon_rel_earth_ECI_km, ~] = Forces.Vallado_moonPositionLowPrecision(time_jd_days);
     sat_is_illuminated = Forces.Vallado_sunLOS(r,r_sun_rel_earth_ECI_km);
 
-    A = A_func(r,v,C_drag,r_sun_rel_earth_ECI_km(:), r_moon_rel_earth_ECI_km(:),sat_is_illuminated); % Everything must be 3x1
+    % Rotation Matrix
+    dt = datetime(time_jd_days, 'ConvertFrom', 'juliandate', 'TimeZone', 'UTC');
+    EOP_params_t = Tools.interpolate_EOP(dt,"IERS");
+    R_ECEF_from_ECI = Tools.R_ECEF_from_ECI_Matrix(dt,EOP_params_t);
+
+    A = A_func(r,v,C_drag,r_sun_rel_earth_ECI_km(:), r_moon_rel_earth_ECI_km(:),sat_is_illuminated,R_ECEF_from_ECI); % Everything must be 3x1
 
     STM_dot = A*STM; % Propogate STM Matrix
     
-    a_total = accel_func(r,v,C_drag,r_sun_rel_earth_ECI_km(:), r_moon_rel_earth_ECI_km(:),sat_is_illuminated);
+    a_total = accel_func(r,v,C_drag,r_sun_rel_earth_ECI_km(:), r_moon_rel_earth_ECI_km(:),sat_is_illuminated,R_ECEF_from_ECI);
 
     C_drag_dot = 0; % The time derivative of the drag coefficient should be 0.
 

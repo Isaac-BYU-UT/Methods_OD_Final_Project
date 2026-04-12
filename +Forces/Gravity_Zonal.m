@@ -1,5 +1,6 @@
-function accel_Zonals_km_s2 = Gravity_Zonal(r_km, J2_on, J3_on, J4_on)
-    % TODO: Transform to ECEF!
+function accel_Zonals_km_s2 = Gravity_Zonal(r_ECI_km, R_ECEF_from_ECI, J2_on, J3_on, J4_on)
+    % TODO: vallidate transformation!
+    r_ECEF_km = R_ECEF_from_ECI * r_ECI_km;
     
     % Set defaults
     if nargin < 2, J2_on = true;  end
@@ -10,8 +11,8 @@ function accel_Zonals_km_s2 = Gravity_Zonal(r_km, J2_on, J3_on, J4_on)
     mu = Constants.MU_EARTH_KM3_S2;
     Re = Constants.R_EARTH_KM;
     
-    r_mag = sqrt(r_km(1)^2 + r_km(2)^2 + r_km(3)^2);
-    phi_sub = r_km(3) / r_mag; % sin(latitude) = z/r -- this needs to be in ECEF!!!!
+    r_mag = sqrt(r_ECEF_km(1)^2 + r_ECEF_km(2)^2 + r_ECEF_km(3)^2);
+    phi_sub = r_ECEF_km(3) / r_mag; % sin(latitude) = z/r -- this needs to be in ECEF!!!!
     
     % Initialize Potential
     U_Zonals = 0;
@@ -35,5 +36,5 @@ function accel_Zonals_km_s2 = Gravity_Zonal(r_km, J2_on, J3_on, J4_on)
     end
 
     % Return the gradient vector (Acceleration)
-    accel_Zonals_km_s2 = gradient(U_Zonals, r_km); %
+    accel_Zonals_km_s2 = gradient(U_Zonals, r_ECI_km); %
 end
