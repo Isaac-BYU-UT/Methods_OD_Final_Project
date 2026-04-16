@@ -9,7 +9,7 @@ function ref_data = get_reference_data_1Day_Subset()
         Actual_Measurements = array2table(Actual_Measurements); % Convert to table for easier handling
         Actual_Measurements.Properties.VariableNames = {'station_id', 'time_sec_past_epoch', 'apparent_range_km', 'apparent_range_rate_km_s'}; % Make the variable names more intuitive
 
-        ref_data_cached = struct('Actual_Measurements', Actual_Measurements);
+        ref_data_cached = struct('Actual_Measurements', table2struct(Actual_Measurements,'ToScalar',true));
 
         %% Only keep the first 1 day of data for the subset
         ref_data_cached.Actual_Measurements = ref_data_cached.Actual_Measurements(ref_data_cached.Actual_Measurements.time_sec_past_epoch <= 24*3600, :);

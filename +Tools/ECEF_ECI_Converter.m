@@ -1,13 +1,13 @@
-function [r_converted_km, v_converted_km_sec] = ECEF_ECI_Converter(r_original_km, v_original_km_sec, UTC_date_time, conversion_type, EOP_params)
+function [r_converted_km, v_converted_km_sec, R_ECI_from_ECEF, R_ECEF_from_ECI] = ECEF_ECI_Converter(r_original_km, v_original_km_sec, UTC_date_time, conversion_type, EOP_params)
 
 time_struct = Tools.ComputeTimeSystems(UTC_date_time, EOP_params.delta_AT_sec, EOP_params.UT1_UTC_sec);
 arcsec2rad = pi/648000; % Number of arseconds per radian
 arcsec2deg = 1/3600; % Number of arcseconds per degree 
 t_TT = time_struct.t_TT_centuries;
 %% P Procession Matrix
-zeta_rad  = (2306.2181*t_TT + 0.30188*t_TT^2 + 0.017998*t_TT^3) * Constants.ARCSEC_TO_RAD;
-theta_rad = (2004.3109*t_TT - 0.42665*t_TT^2 - 0.041833*t_TT^3) * Constants.ARCSEC_TO_RAD;
-z_rad     = (2306.2181*t_TT + 1.09468*t_TT^2 + 0.018203*t_TT^3) * Constants.ARCSEC_TO_RAD;
+zeta_rad  = (2306.2181*t_TT + 0.30188*t_TT^2 + 0.017998*t_TT^3) * Units.ARCSEC_TO_RAD;
+theta_rad = (2004.3109*t_TT - 0.42665*t_TT^2 - 0.041833*t_TT^3) * Units.ARCSEC_TO_RAD;
+z_rad     = (2306.2181*t_TT + 1.09468*t_TT^2 + 0.018203*t_TT^3) * Units.ARCSEC_TO_RAD;
 
 P = rot3_rad(zeta_rad)*rot2_rad(-theta_rad)*rot3_rad(z_rad);
 %% N Nutation Matrix
@@ -90,7 +90,7 @@ THETA_GMST_1982_deg_0h = ... % Vallado Eq 3-45 degree version
     + 0.00038793 * t_GMST^2 ...
     - 2.6e-8 * t_GMST^3;
 
-THETA_GMST_deg_wo_Eq = THETA_GMST_1982_deg_0h + rad2deg(EOP_params.omega_earth_rad_sec * time_struct.sec_past_midnight_UT1);
+THETA_GMST_deg_wo_Eq = THETA_GMST_1982_deg_0h + Units.RAD_TO_DEG * (EOP_params.omega_earth_rad_sec * time_struct.sec_past_midnight_UT1);
 THETA_GMST_deg_wo_Eq = mod(THETA_GMST_deg_wo_Eq,360);
 
 % Eq 3-79:
@@ -114,10 +114,10 @@ yp_rad = EOP_params.y_pole_arcsec * arcsec2rad;
 
 M = rot1_rad(yp_rad)*rot2_rad(xp_rad); % Full version
 %% Orthogonalize All Matrices
-M = Tools.orthodcm(M);
-S = Tools.orthodcm(S);
-N = Tools.orthodcm(N);
-P = Tools.orthodcm(P);
+M = Tools.orthodcm_fast(M);
+S = Tools.orthodcm_fast(S);
+N = Tools.orthodcm_fast(N);
+P = Tools.orthodcm_fast(P);
 %% Compute Transform:
 
 Omega_Earth_Vector_Rad_Sec = [0; 0; EOP_params.omega_earth_rad_sec];
@@ -128,10 +128,14 @@ if strcmp(conversion_type,'ECEF_to_ECI') % This is ITRF to GCRF, which is the sa
     v_converted_km_sec = P*N*S*(M*v_original_km_sec + cross(Omega_Earth_Vector_Rad_Sec,r_PEF_km));
 
 elseif strcmp(conversion_type,'ECI_to_ECEF') % This is GCRF to ITRF, which is the same as ECI to ECEF
-    r_PEF_km = S'*N'*P'*r_original_km;
-    r_converted_km = M'*r_PEF_km;
-    v_converted_km_sec = M'*(S'*N'*P'*v_original_km_sec - cross(Omega_Earth_Vector_Rad_Sec,r_PEF_km));
+    r_PEF_km = S.'*N.'*P.'*r_original_km;
+    r_converted_km = M.'*r_PEF_km;
+    v_converted_km_sec = M.'*(S.'*N.'*P.'*v_original_km_sec - cross(Omega_Earth_Vector_Rad_Sec,r_PEF_km));
 end
+
+R_ECI_from_ECEF = P*N*S*M;
+R_ECEF_from_ECI = M.'*S.'*N.'*P.';
+
 end
  %% Rotation Matrix Functions (Generated Quickly through Gemini formatting, but I understand their function 100%)
 

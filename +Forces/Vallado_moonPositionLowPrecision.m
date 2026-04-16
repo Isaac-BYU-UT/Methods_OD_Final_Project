@@ -1,4 +1,4 @@
-function [rMoon_km_MOD, rightAscension_rad, declination_rad] = Vallado_moonPositionLowPrecision(jd_utc_days)
+function [rMoon_meters_MOD, rightAscension_rad, declination_rad] = Vallado_moonPositionLowPrecision(jd_utc_days)
 % -------------------------------------------------------------------------
 % REFERENCE: https://github.com/CelesTrak/fundamentals-of-astrodynamics/blob/main/software/matlab/moon.m 
 % CODE BASED ON VERSION BY VALLADO!
@@ -11,7 +11,7 @@ function [rMoon_km_MOD, rightAscension_rad, declination_rad] = Vallado_moonPosit
 %   jd_utc_days          - Julian Date [days]
 %
 % OUTPUTS:
-%   rMoon_km_ECI         - Moon position vector [km] (ECI frame)
+%   rMoon_meters_ECI         - Moon position vector [meters] (ECI frame)
 %   rightAscension_rad   - Right ascension [rad]
 %   declination_rad      - Declination [rad]
 %
@@ -74,16 +74,16 @@ function [rMoon_km_MOD, rightAscension_rad, declination_rad] = Vallado_moonPosit
     n_hat = sin(obliquity_rad) * cos(eclipticLatitude_rad) * sin(eclipticLongitude_rad) ...
           + cos(obliquity_rad) * sin(eclipticLatitude_rad);
 
-    %% -------------------- Distance (km) --------------------
+    %% -------------------- Distance (meters) --------------------
     % Vallado formulation: distance = Earth radius / sin(horizontal parallax)
-    rMoon_km = re / sin(horizontalParallax_rad);
+    rMoon_meters = re / sin(horizontalParallax_rad) * Units.KILOMETERS;
 
     %% -------------------- Position Vector --------------------
-    rMoon_km_MOD = zeros(3,1);
+    rMoon_meters_MOD = zeros(3,1);
 
-    rMoon_km_MOD(1) = rMoon_km * l_hat;
-    rMoon_km_MOD(2) = rMoon_km * m_hat;
-    rMoon_km_MOD(3) = rMoon_km * n_hat;
+    rMoon_meters_MOD(1) = rMoon_meters * l_hat;
+    rMoon_meters_MOD(2) = rMoon_meters * m_hat;
+    rMoon_meters_MOD(3) = rMoon_meters * n_hat;
 
     %% -------------------- Right Ascension & Declination --------------------
     rightAscension_rad = atan2(m_hat, l_hat);

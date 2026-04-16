@@ -203,7 +203,7 @@ function EOP_Data = get_EOP_data()
         % century. Data is from Seidelmann (1992:112–113) and McCarthy (1996). There are    
         % 106 terms in the complete theory. 
 
-        unit_conversion = .0001 * Constants.ARCSEC_TO_DEG; % .0001" per Julian Century * 
+        unit_conversion = .0001 * Units.ARCSEC_TO_DEG; % .0001" per Julian Century * 
 
         nut80.A_i_deg = nut80.A_i_1e_4_arcsec * unit_conversion;
         nut80.B_i_deg = nut80.B_i_1e_4_arcsec * unit_conversion;
@@ -211,7 +211,8 @@ function EOP_Data = get_EOP_data()
         nut80.D_i_deg = nut80.D_i_1e_4_arcsec * unit_conversion;
      
         %% Set Equal to Cashed Data
-        EOP_Data_cached = struct('table_EOP_IERS', table_EOP_IERS, 'table_EOP_Celestrak', table_EOP_Celestrak, 'nut80', nut80);
+        % Also convert tables to structs!
+        EOP_Data_cached = struct('EOP_IERS', table2struct(table_EOP_IERS,'ToScalar',true), 'EOP_Celestrak', table2struct(table_EOP_Celestrak,'ToScalar',true), 'nut80', table2struct(nut80,'ToScalar',true));
 
     end
         EOP_Data = EOP_Data_cached;

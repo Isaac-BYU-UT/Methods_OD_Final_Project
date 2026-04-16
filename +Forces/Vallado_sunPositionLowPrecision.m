@@ -1,4 +1,4 @@
-function [rSun_KM_MOD, rightAscension_rad, declination_rad] = Vallado_sunPositionLowPrecision(jd_utc_days)
+function [rSun_meters_MOD, rightAscension_rad, declination_rad] = Vallado_sunPositionLowPrecision(jd_utc_days)
 % -------------------------------------------------------------------------
 % REFERENCE: https://github.com/CelesTrak/fundamentals-of-astrodynamics/blob/main/software/matlab/sun.m
 % CODE BASED ON VERSION BY VALLADO!
@@ -11,7 +11,7 @@ function [rSun_KM_MOD, rightAscension_rad, declination_rad] = Vallado_sunPositio
 %   jd_utc_days          - Julian Date (UTC) [days]
 %
 % OUTPUTS:
-%   rSun_AU_TEME         - Sun position vector [AU] (TEME-like frame)
+%   rSun_meters_TEME         - Sun position vector [meters] (TEME-like frame)
 %   rightAscension_rad   - Right ascension [rad]
 %   declination_rad      - Declination [rad]
 %
@@ -70,7 +70,7 @@ function [rSun_KM_MOD, rightAscension_rad, declination_rad] = Vallado_sunPositio
     rSun_AU_MOD(2) = rSun_AU * cos(obliquity_rad) * sin(eclipticLongitude_rad);
     rSun_AU_MOD(3) = rSun_AU * sin(obliquity_rad) * sin(eclipticLongitude_rad);
 
-    rSun_KM_MOD = rSun_AU_MOD * Constants.AU_KM;
+    rSun_meters_MOD = rSun_AU_MOD * Constants.AU_KM * Units.KILOMETERS;
 
     %% -------------------- Right Ascension --------------------
     rightAscension_rad = atan( cos(obliquity_rad) * tan(eclipticLongitude_rad) );

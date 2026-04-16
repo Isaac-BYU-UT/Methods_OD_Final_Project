@@ -1,17 +1,9 @@
-function EOP_interpolated_simplified = interpolate_EOP(UTC_date_time, EOP_Source)
+function EOP_interpolated_simplified = interpolate_EOP(UTC_date_time, EOP_IERS, EOP_Celestrak)
 
     time_struct = Tools.ComputeTimeSystems(UTC_date_time);
-    ECI_ECEF_Transform_Data = Tools.get_EOP_data(); % Includes table_EOP_IERS, table_EOP_Celestrak, and nut80
+    EOP_Baseline = EOP_IERS;
 
     MJD_UTC = time_struct.mjd_UTC_days;
-
-    if (EOP_Source == "IERS")
-        EOP_Baseline = ECI_ECEF_Transform_Data.table_EOP_IERS;
-    elseif (EOP_Source == "Celestrak")
-        EOP_Baseline = ECI_ECEF_Transform_Data.table_EOP_Celestrak;
-    else
-        error('Invalid EOP source. Please choose either "IERS" or "Celestrak".');
-    end
 
     % We need the following values in our interpolated EOP structure:
     % - MJD_days
@@ -44,13 +36,13 @@ function EOP_interpolated_simplified = interpolate_EOP(UTC_date_time, EOP_Source
     );
 
     % delta_AT_sec is always in the Celestrak table, so we can interpolate it directly from there regardless of the EOP source choice
-    EOP_interpolated_simplified.delta_AT_sec = interp1(ECI_ECEF_Transform_Data.table_EOP_Celestrak.MJD_days, ...
-                                                        ECI_ECEF_Transform_Data.table_EOP_Celestrak.TAI_minus_UTC_sec, ...
+    EOP_interpolated_simplified.delta_AT_sec = interp1( EOP_Celestrak.MJD_days, ...
+                                                        EOP_Celestrak.TAI_minus_UTC_sec, ...
                                                         MJD_UTC);
 
-    EOP_interpolated_simplified.omega_earth_rad_sec = Constants.OMEGA_EARTH_RAD_S * (1 - (EOP_interpolated_simplified.LOD_millisec * Constants.MILLI_TO_NOM / Constants.SEC_IN_SOLAR_DAY));
+    EOP_interpolated_simplified.omega_earth_rad_sec = PhysicsConstants.OMEGA_EARTH_RAD_S * (1 - (EOP_interpolated_simplified.LOD_millisec * Units.MILLI_TO_NOM / Units.SEC_IN_SOLAR_DAY));
 
-    EOP_interpolated_simplified.small_d_delta_psi_1980_deg = EOP_interpolated_simplified.dPsi_milli_arcsec * Constants.MILLI_TO_NOM * Constants.ARCSEC_TO_DEG; % Convert from milli-arcseconds to degrees
-    EOP_interpolated_simplified.small_d_delta_epsilon_1980_deg = EOP_interpolated_simplified.dEpsilon_milli_arcsec * Constants.MILLI_TO_NOM * Constants.ARCSEC_TO_DEG; % Convert from milli-arcseconds to degrees
+    EOP_interpolated_simplified.small_d_delta_psi_1980_deg = EOP_interpolated_simplified.dPsi_milli_arcsec * Units.MILLI_TO_NOM * Units.ARCSEC_TO_DEG; % Convert from milli-arcseconds to degrees
+    EOP_interpolated_simplified.small_d_delta_epsilon_1980_deg = EOP_interpolated_simplified.dEpsilon_milli_arcsec * Units.MILLI_TO_NOM * Units.ARCSEC_TO_DEG; % Convert from milli-arcseconds to degrees
 
 end
