@@ -6,7 +6,7 @@ syms v_ECI_meters_s [3 1] real
 syms C_drag real
 syms r_sun_rel_earth_ECI_meters [3 1] real
 syms r_moon_rel_earth_ECI_meters [3 1] real
-syms sat_is_illuminated
+syms sat_is_illuminated real
 syms R_ECEF_from_ECI [3 3] real
 
 % X_states = [r_ECI_meters; v_ECI_meters_s; C_drag];
@@ -46,16 +46,16 @@ a_total_simple = a_2B + a_Zonals + a_Drag + a_LuniSolar + a_SRP; % In the future
 % --- Compute Partials (The heavy lifting) ---
 da_dr = jacobian(a_total_simple, r_ECI_meters);
 da_dv = jacobian(a_total_simple, v_ECI_meters_s);
-da_dCd = jacobian(a_total_simple, C_drag);
+% da_dCd = jacobian(a_total_simple, SatelliteProperties.C_Drag);
 
 % --- Generate Optimized Files ---
-vars = {r_ECI_meters, v_ECI_meters_s, C_drag, ...
+vars = {r_ECI_meters, v_ECI_meters_s, C_drag, ... 
         r_sun_rel_earth_ECI_meters, r_moon_rel_earth_ECI_meters, ...
         sat_is_illuminated, R_ECEF_from_ECI};
 
 matlabFunction(da_dr, 'File', '+Forces/calc_da_dr', 'Vars', vars, 'Optimize', true);
 matlabFunction(da_dv, 'File', '+Forces/calc_da_dv', 'Vars', vars, 'Optimize', true);
-matlabFunction(da_dCd, 'File', '+Forces/calc_da_dCd', 'Vars', vars, 'Optimize', true);
+% matlabFunction(da_dCd, 'File', '+Forces/calc_da_dCd', 'Vars', vars, 'Optimize', true);
 
 % Convert to matlabFunction form 
 % ---------------------------------

@@ -134,7 +134,7 @@ elseif strcmp(conversion_type,'ECI_to_ECEF') % This is GCRF to ITRF, which is th
 end
 
 R_ECI_from_ECEF = P*N*S*M;
-R_ECEF_from_ECI = M.'*S.'*N.'*P.';
+R_ECEF_from_ECI = transpose(M)*transpose(S)*transpose(N)*transpose(P);
 
 end
  %% Rotation Matrix Functions (Generated Quickly through Gemini formatting, but I understand their function 100%)

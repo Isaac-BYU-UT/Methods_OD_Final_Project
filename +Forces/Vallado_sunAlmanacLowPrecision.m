@@ -71,7 +71,7 @@ function [rSun_meters_MOD, rightAscension_rad, declination_rad] = Vallado_sunAlm
     rSun_AU_MOD(2) = rSun_AU * cos(obliquity_rad) * sin(eclipticLongitude_rad);
     rSun_AU_MOD(3) = rSun_AU * sin(obliquity_rad) * sin(eclipticLongitude_rad);
 
-    rSun_meters_MOD = rSun_AU_MOD * Constants.AU_KM * Units.KILOMETERS;
+    rSun_meters_MOD = rSun_AU_MOD * PhysicsConstants.AU_KM * Units.KILOMETERS;
 
     %% -------------------- Right Ascension --------------------
     rightAscension_rad = atan( cos(obliquity_rad) * tan(eclipticLongitude_rad) );

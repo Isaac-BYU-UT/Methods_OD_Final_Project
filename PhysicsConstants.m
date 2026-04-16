@@ -15,7 +15,7 @@ classdef PhysicsConstants
         J3_EARTH          = -2.53241051856772e-06 % from Vallado D-1 (EGM-08), −0.000 002 532 3 from Vallado D-3
         J4_EARTH          = -1.61989759991697e-06 % from Vallado D-1 (EGM-08),  −0.000 001 620 4 from Vallado D-3
 
-        SOLAR_PRESSURE_N_M = 4.57e-6;
+        SOLAR_PRESSURE_N_M2 = 4.57e-6;
 
     end
 end

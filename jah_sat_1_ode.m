@@ -1,4 +1,4 @@
-function X_state_dot = jah_sat_1_ode(t, X, epoch_jd_UTC_days,debug_on)
+function X_state_dot = jah_sat_1_ode(t, X, S, ENV, debug_on)
 
     if nargin < 4
         debug_on = false;
@@ -6,11 +6,11 @@ function X_state_dot = jah_sat_1_ode(t, X, epoch_jd_UTC_days,debug_on)
     
     r_ECI_m = X(1:3);
     v_ECI_m_s = X(4:6);
-    C_drag = X(7);
-    STM = reshape(X(8:56),7,7); % 7 states, therefor this will be a 7x7 STM
+    C_drag = SatelliteProperties.C_Drag;
+    STM = reshape(X(7:42),6,6); % Now only 6 states! % 7 states, therefor this will be a 7x7 STM
 
     % Convert time to Julian Date in days
-    time_jd_days = t/Constants.SEC_IN_SOLAR_DAY + epoch_jd_UTC_days;
+    time_jd_days = t/Units.SEC_IN_SOLAR_DAY + ENV.time_struct_epoch.jd_UTC_days;
 
     % ---- Find Moon and Sun Positions -----
     [r_sun_rel_earth_ECI_meters, ~] = Forces.Vallado_sunPositionLowPrecision(time_jd_days);
@@ -19,7 +19,7 @@ function X_state_dot = jah_sat_1_ode(t, X, epoch_jd_UTC_days,debug_on)
 
     % Compute Rotation Matrix
     date_time_t = datetime(time_jd_days, 'ConvertFrom', 'juliandate', 'TimeZone', 'UTC');
-    EOP_params_t = Tools.interpolate_EOP(date_time_t,"IERS");
+    EOP_params_t = Tools.interpolate_EOP(date_time_t,ENV.EOP_IERS, ENV.EOP_Celestrak);
     [~, ~, R_ECI_from_ECEF, R_ECEF_from_ECI] = Tools.ECEF_ECI_Converter(r_ECI_m, v_ECI_m_s, date_time_t, "ECI_to_ECEF", EOP_params_t);
 
     % Compute and Propogate STM
@@ -33,6 +33,10 @@ function X_state_dot = jah_sat_1_ode(t, X, epoch_jd_UTC_days,debug_on)
     
     STM_dot = A_matrix*STM; 
 
+    % if t == 0
+    %     disp("A_matrix: "); disp((A_matrix - S.ref_data.A_t0_ref)./S.ref_data.A_t0_ref);
+    % end
+
 
     % --- Compute State Derivatives ---
     a_total_ECI_m_s2 = Forces.Compute_Total_Acceleration_ECI_m_s2(...
@@ -42,17 +46,17 @@ function X_state_dot = jah_sat_1_ode(t, X, epoch_jd_UTC_days,debug_on)
                                     sat_is_illuminated,...
                                     R_ECEF_from_ECI);
 
-    C_drag_dot = 0;
+    % C_drag_dot = 0;
 
     X_state_dot =  [v_ECI_m_s;...
                     a_total_ECI_m_s2;...
-                    C_drag_dot;...
+                    % C_drag_dot;...
                     STM_dot(:)];
 
 
     % For Debug Purposes Only
     % ------------------------
-    if debug_on
+    if (debug_on)
         a_component_ECI_m_s2 = Forces.Compute_Component_Acceleration_ECI_m_s2(...
                                         r_ECI_m,v_ECI_m_s,C_drag,...
                                         r_sun_rel_earth_ECI_meters(:),...
@@ -67,6 +71,10 @@ function X_state_dot = jah_sat_1_ode(t, X, epoch_jd_UTC_days,debug_on)
         disp("a_Drag: " + mat2str(a_component_ECI_m_s2(7:9)/Units.KILOMETERS));
         disp("a_LuniSolar: " + mat2str(a_component_ECI_m_s2(10:12)/Units.KILOMETERS));
         disp("a_SRP: " + mat2str(a_component_ECI_m_s2(13:15)/Units.KILOMETERS));
+
+        % This will pause execution until you press any key in the Command Window
+        disp('Press any key to continue to the next observation...');
+        pause;
     end
 
 end

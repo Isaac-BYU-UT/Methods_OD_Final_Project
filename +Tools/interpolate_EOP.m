@@ -1,48 +1,73 @@
-function EOP_interpolated_simplified = interpolate_EOP(UTC_date_time, EOP_IERS, EOP_Celestrak)
+function EOP_out = interpolate_EOP(UTC_date_time, EOP_IERS, EOP_Celestrak)
 
-    time_struct = Tools.ComputeTimeSystems(UTC_date_time);
     EOP_Baseline = EOP_IERS;
 
-    MJD_UTC = time_struct.mjd_UTC_days;
+    % Convert time once
+    time_struct = Tools.ComputeTimeSystems(UTC_date_time);
+    t_query = time_struct.mjd_UTC_days;
 
-    % We need the following values in our interpolated EOP structure:
-    % - MJD_days
-    % - x_pole_arcsec
-    % - y_pole_arcsec
-    % - dPsi_milli_arcsec
-    % - dEpsilon_milli_arcsec
-    % - UT1_UTC_sec
-    % - LOD_millisec
+    % Pull pre-packed data (FAST local references)
+    t = EOP_Baseline.t;
+    Y = EOP_Baseline.Y;
 
-    % Interpolate the EOP values at the given MJD_UTC
-    interp_matrix = interp1(EOP_Baseline.MJD_days, ...
-                            [EOP_Baseline.x_pole_arcsec, ...
-                             EOP_Baseline.y_pole_arcsec, ...
-                             EOP_Baseline.dPsi_milli_arcsec, ...
-                             EOP_Baseline.dEpsilon_milli_arcsec, ...
-                             EOP_Baseline.UT1_minus_UTC_sec, ...
-                             EOP_Baseline.LOD_millisec], ...
-                            MJD_UTC);
+    % ----------------------------
+    % FAST index search (linear time if used, but MATLAB optimized)
+    % ----------------------------
+    i = find(t <= t_query, 1, 'last');
 
-    % Create a struct to hold the interpolated values
-    EOP_interpolated_simplified = struct( ... 
-        'MJD_days', MJD_UTC, ...
-        'x_pole_arcsec', interp_matrix(1), ...
-        'y_pole_arcsec', interp_matrix(2), ...
-        'dPsi_milli_arcsec', interp_matrix(3), ...
-        'dEpsilon_milli_arcsec', interp_matrix(4), ...
-        'UT1_UTC_sec', interp_matrix(5), ...
-        'LOD_millisec', interp_matrix(6) ...
-    );
+    % Boundary safety (important for EKF robustness)
+    if i >= length(t)
+        i = length(t) - 1;
+    elseif i < 1
+        i = 1;
+    end
 
-    % delta_AT_sec is always in the Celestrak table, so we can interpolate it directly from there regardless of the EOP source choice
-    EOP_interpolated_simplified.delta_AT_sec = interp1( EOP_Celestrak.MJD_days, ...
-                                                        EOP_Celestrak.TAI_minus_UTC_sec, ...
-                                                        MJD_UTC);
+    t0 = t(i);
+    t1 = t(i+1);
 
-    EOP_interpolated_simplified.omega_earth_rad_sec = PhysicsConstants.OMEGA_EARTH_RAD_S * (1 - (EOP_interpolated_simplified.LOD_millisec * Units.MILLI_TO_NOM / Units.SEC_IN_SOLAR_DAY));
+    % Avoid divide-by-zero (rare but safe)
+    if t1 == t0
+        alpha = 0;
+    else
+        alpha = (t_query - t0) / (t1 - t0);
+    end
 
-    EOP_interpolated_simplified.small_d_delta_psi_1980_deg = EOP_interpolated_simplified.dPsi_milli_arcsec * Units.MILLI_TO_NOM * Units.ARCSEC_TO_DEG; % Convert from milli-arcseconds to degrees
-    EOP_interpolated_simplified.small_d_delta_epsilon_1980_deg = EOP_interpolated_simplified.dEpsilon_milli_arcsec * Units.MILLI_TO_NOM * Units.ARCSEC_TO_DEG; % Convert from milli-arcseconds to degrees
+    % ----------------------------
+    % LINEAR INTERPOLATION (vectorized row)
+    % ----------------------------
+    interp_matrix = Y(i,:) + alpha .* (Y(i+1,:) - Y(i,:));
+
+    % ----------------------------
+    % Pack output
+    % ----------------------------
+    EOP_out = struct();
+
+    EOP_out.MJD_days = t_query;
+
+    EOP_out.x_pole_arcsec          = interp_matrix(1);
+    EOP_out.y_pole_arcsec          = interp_matrix(2);
+    EOP_out.dPsi_milli_arcsec      = interp_matrix(3);
+    EOP_out.dEpsilon_milli_arcsec  = interp_matrix(4);
+    EOP_out.UT1_UTC_sec            = interp_matrix(5);
+    EOP_out.LOD_millisec           = interp_matrix(6);
+
+    % ----------------------------
+    % Secondary derived quantities
+    % ----------------------------
+
+    EOP_out.delta_AT_sec = interp1( ...
+        EOP_Celestrak.MJD_days, ...
+        EOP_Celestrak.TAI_minus_UTC_sec, ...
+        t_query, ...
+        'linear');
+
+    EOP_out.omega_earth_rad_sec = PhysicsConstants.OMEGA_EARTH_RAD_S * ...
+        (1 - (EOP_out.LOD_millisec * Units.MILLI_TO_NOM / Units.SEC_IN_SOLAR_DAY));
+
+    EOP_out.small_d_delta_psi_1980_deg = ...
+        EOP_out.dPsi_milli_arcsec * Units.MILLI_TO_NOM * Units.ARCSEC_TO_DEG;
+
+    EOP_out.small_d_delta_epsilon_1980_deg = ...
+        EOP_out.dEpsilon_milli_arcsec * Units.MILLI_TO_NOM * Units.ARCSEC_TO_DEG;
 
 end

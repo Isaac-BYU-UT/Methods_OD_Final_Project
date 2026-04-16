@@ -1,9 +1,9 @@
-function G_measurements = Compute_Range_Range_Rate(r_sat_ECI_km, v_sat_ECI_km_s, r_station_ECI_km, v_station_ECI_km_s)
+function G_measurements = Compute_Range_Range_Rate(r_sat_ECI_meters, v_sat_ECI_meters_s, r_station_ECI_meters, v_station_ECI_meters_s)
 
-    rho_vec_ECI_km = r_sat_ECI_km - r_station_ECI_km; % Range vector
-    rho_norm_ECI_km = norm(rho_vec_ECI_km); % Range magnitude
+    rho_vec_ECI_meters = r_sat_ECI_meters - r_station_ECI_meters; % Range vector
+    rho_norm_ECI_meters = norm(rho_vec_ECI_meters); % Range magnitude
 
-    rho_dot_ECI_km_sec = (rho_vec_ECI_km' * (v_sat_ECI_km_s - v_station_ECI_km_s)) / rho_norm_ECI_km; % Range rate
+    rho_dot_ECI_meters_sec = (rho_vec_ECI_meters' * (v_sat_ECI_meters_s - v_station_ECI_meters_s)) / rho_norm_ECI_meters; % Range rate
 
-    G_measurements = [rho_norm_ECI_km; rho_dot_ECI_km_sec];
+    G_measurements = [rho_norm_ECI_meters; rho_dot_ECI_meters_sec];
 end

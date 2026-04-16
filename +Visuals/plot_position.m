@@ -4,7 +4,7 @@ function plot_position(r_ECI, v_ECI, P_ECI, full_orbit_ECI)
     % full_orbit_ECI: [Nx3] matrix of the orbit path in ECI
     
     r_ECI = r_ECI(:); v_ECI = v_ECI(:);
-    R_earth = Constants.R_EARTH_KM;
+    R_earth = PhysicsConstants.R_EARTH_KM * Units.KILOMETERS;
 
     % 1. Define RSW Basis and Rotation
     r_unit = r_ECI / norm(r_ECI);
@@ -51,7 +51,7 @@ function plot_position(r_ECI, v_ECI, P_ECI, full_orbit_ECI)
         
         % Zoom in on the satellite/covariance
         % Adjust this multiplier to see more or less of the orbit
-        limit = .02; % km
+        limit = 1000 * Units.KILOMETERS; 
         xlim([-limit, limit]); ylim([-limit, limit]);
     end
 end

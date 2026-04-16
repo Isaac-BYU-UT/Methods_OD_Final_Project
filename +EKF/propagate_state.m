@@ -1,15 +1,24 @@
-function [X_nominal, STM] = propagate_state(ekf)
+function [X_states_propogated, STM_propogated, y_ode_prop] = propagate_state(ekf,S, ENV)
 
     i = ekf.current_index;
 
-    [~, y] = ode45(@(t,X) jah_sat_1_ode( ...
-        t, X, ekf.time_struct.jd_UTC_days, false), ...
+    if strcmp(ekf.ode_type, 'ode113')
+
+        [~, y_ode_prop] = ode113(@(t,X) jah_sat_1_ode( ...
+        t, X, S, ENV, ekf.debug_on), ...
         [ekf.t_obs(i-1), ekf.t_obs(i)], ekf.X_input, ekf.options);
 
-    X_full = y(end,:)';
+    else
+        [~, y_ode_prop] = ode45(@(t,X) jah_sat_1_ode( ...
+        t, X, S, ENV, ekf.debug_on), ...
+        [ekf.t_obs(i-1), ekf.t_obs(i)], ekf.X_input, ekf.options);
 
-    X_nominal = X_full(1:ekf.N_states);
+    end
 
-    STM = reshape(X_full(ekf.N_states+1:end), ...
+    X_full_propagated = transpose(y_ode_prop(end,:)); % Make this a column vector
+
+    X_states_propogated = X_full_propagated(1:ekf.N_states);
+
+    STM_propogated = reshape(X_full_propagated(ekf.N_states+1:end), ...
                   ekf.N_states, ekf.N_states);
 end

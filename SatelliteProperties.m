@@ -1,6 +1,6 @@
 classdef SatelliteProperties
     properties (Constant)
-        MASS_KG = 2000; % Mass of satellite for drag calculations, in kg
+        SATELLITE_MASS_KG = 2000; % Mass of satellite for drag calculations, in kg
        
         % --- Spacecraft Geometry and Optical Properties ---
         % Areas in m^2
@@ -25,5 +25,8 @@ classdef SatelliteProperties
         % Solar Cells
         SOLAR_CELLS_CD = 0.04;
         SOLAR_CELLS_CS = 0.04;
+
+        % PLACEHOLDER FOR NOW -- ASSUME THAT C_DRAG IS ALWAYS CONSTANT!!
+        C_Drag = 1.88;
     end
 end

@@ -13,7 +13,7 @@ function isIlluminated = Vallado_sunLOS(r_sat_km, r_sun_km)
 % -------------------------------------------------------------------------
 
     % Earth's radius (km)
-    R_earth = Constants.R_EARTH_KM;
+    R_earth = PhysicsConstants.R_EARTH_KM;
 
     % Precompute dot products
     r1 = r_sat_km(:);

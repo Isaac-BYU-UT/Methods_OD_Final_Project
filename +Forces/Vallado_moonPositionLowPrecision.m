@@ -26,7 +26,7 @@ function [rMoon_meters_MOD, rightAscension_rad, declination_rad] = Vallado_moonP
     DEG2RAD    = pi / 180.0;
 
     % Load astronomical constants (expects Earth radius, etc.)
-    re = Constants.R_EARTH_KM;
+    re = PhysicsConstants.R_EARTH_KM;
 
     %% -------------------- Time --------------------
     % Julian centuries since J2000 (TDB approximation!!!)

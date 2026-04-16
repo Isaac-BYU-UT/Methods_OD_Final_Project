@@ -5,6 +5,6 @@ function accel_2Body_m_s2 = Gravity_2Body(r_ECI_meters)
     % Output: accel_2Body_m_s2 - 3x1 acceleration vector [m/s^2]
     
     r_mag_meters = norm(r_ECI_meters);
-    mu = Constants.MU_EARTH_KM3_S2 * (Units.KILOMETERS ^ 3);
+    mu = PhysicsConstants.MU_EARTH_KM3_S2 * (Units.KILOMETERS ^ 3);
     accel_2Body_m_s2 = -(mu / r_mag_meters^3) * r_ECI_meters;
 end

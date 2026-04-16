@@ -1,10 +1,10 @@
 function plot_measurement_correlation_linked(Measurement_Table)
     % Plots Truth vs Model as discrete points with vertical connector lines
     t_sec = Measurement_Table.time_sec_past_epoch;
-    obs_r = Measurement_Table.apparent_range_km;
-    comp_r = Measurement_Table.computed_range_km;
-    obs_rr = Measurement_Table.apparent_range_rate_km_s;
-    comp_rr = Measurement_Table.computed_range_rate_km_s;
+    obs_r = Measurement_Table.apparent_range_meters;
+    comp_r = Measurement_Table.computed_range_meters;
+    obs_rr = Measurement_Table.apparent_range_rate_meters_s;
+    comp_rr = Measurement_Table.computed_range_rate_meters_s;
     
     figure('Color', 'w', 'Name', 'Measurement Correlation - Linked');
     
@@ -21,7 +21,7 @@ function plot_measurement_correlation_linked(Measurement_Table)
     plot(t_sec, obs_r, 'ko', 'MarkerFaceColor', 'k', 'MarkerSize', 6, 'DisplayName', 'Observed (o)');
     plot(t_sec, comp_r, 'rd', 'MarkerSize', 6, 'DisplayName', 'Computed (d)');
     
-    ylabel('Range (km)'); 
+    ylabel('Range (meters)'); 
     title('Range: Observed vs Computed (Lines represent Residuals)');
     legend('show', 'Location', 'best');
 
@@ -36,7 +36,7 @@ function plot_measurement_correlation_linked(Measurement_Table)
     plot(t_sec, obs_rr, 'ko', 'MarkerFaceColor', 'k', 'MarkerSize', 6, 'DisplayName', 'Observed (o)');
     plot(t_sec, comp_rr, 'bd', 'MarkerSize', 6, 'DisplayName', 'Computed (d)');
     
-    ylabel('Range-Rate (km/s)'); xlabel('Time (s)');
+    ylabel('Range-Rate (meters/s)'); xlabel('Time (s)');
     title('Doppler: Observed vs Computed');
     legend('show', 'Location', 'best');
 end

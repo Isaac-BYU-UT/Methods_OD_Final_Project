@@ -3,8 +3,8 @@ function plot_station_residuals(Measurement_Table, station_names)
     % station_names: Cell array of strings, e.g., {'Atoll', 'Diego Garcia', ...}
 
     % Calculate Residuals
-    res_range = Measurement_Table.apparent_range_km - Measurement_Table.computed_range_km;
-    res_rate  = Measurement_Table.apparent_range_rate_km_s - Measurement_Table.computed_range_rate_km_s;
+    res_range = Measurement_Table.apparent_range_meters - Measurement_Table.computed_range_meters;
+    res_rate  = Measurement_Table.apparent_range_rate_meters_s - Measurement_Table.computed_range_rate_meters_s;
     t_sec     = Measurement_Table.time_sec_past_epoch;
     u_stations = unique(Measurement_Table.station_id);
     
@@ -19,7 +19,7 @@ function plot_station_residuals(Measurement_Table, station_names)
         plot(t_sec(idx), res_range(idx), 'o', 'MarkerFaceColor', colors(k,:), ...
             'Color', colors(k,:), 'DisplayName', station_names{u_stations(k)});
     end
-    ylabel('Range Residual (km)'); title('Station-Dependent Range Residuals');
+    ylabel('Range Residual (meters)'); title('Station-Dependent Range Residuals');
     legend('Location', 'bestoutside'); set(gca, 'FontSize', 12);
 
     % --- Bottom Subplot: Range-Rate Residuals ---
@@ -29,7 +29,7 @@ function plot_station_residuals(Measurement_Table, station_names)
         plot(t_sec(idx), res_rate(idx), 's', 'MarkerFaceColor', colors(k,:), ...
             'Color', colors(k,:), 'DisplayName', station_names{u_stations(k)});
     end
-    ylabel('Range-Rate Residual (km/s)'); xlabel('Time since epoch (s)');
+    ylabel('Range-Rate Residual (meters/s)'); xlabel('Time since epoch (s)');
     title('Station-Dependent Range-Rate Residuals');
     legend('Location', 'bestoutside'); set(gca, 'FontSize', 12);
 end

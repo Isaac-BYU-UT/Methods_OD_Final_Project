@@ -1,30 +1,41 @@
-function meas = compute_measurement(ekf, S, ENV, X_nominal, i)
+function [curr_meas,ekf] = compute_measurement(ekf, S, ENV, X_nominal)
+% meas struct with fields:
+%       station_id
+%       y_obs_meters
+%       R
+%       r_stn_ECI_m
+%       v_stn_ECI_m_s
+%       y_computed_meters
+%       residual
+% -----------------------
+    i = ekf.current_index;
+    curr_meas.station_id = S.ref_data.Actual_Measurements.station_id(i);
 
-    meas.station_id = S.ref_data.Actual_Measurements.station_id(i);
+    curr_meas.y_obs_meters = [S.ref_data.Actual_Measurements.apparent_range_km(i); ...
+                   S.ref_data.Actual_Measurements.apparent_range_rate_km_s(i)] ...
+                   * Units.KILOMETERS; % SUPER IMPORTANT!!!
 
-    meas.y_meas = S.ref_data.Actual_Measurements{i, ...
-        {'apparent_range_km','apparent_range_rate_km_s'}}(:) * Units.KILOMETERS; % CONVERT TO METERS
-
-    meas.R = S.Stations(meas.station_id).Covariance;
+    curr_meas.R = S.Stations(curr_meas.station_id).Covariance;
 
     % Time
-    date_time = ekf.time_struct.jd_UTC_days + seconds(ekf.t_obs(i));
+    date_time = S.IC_Sat_Epoch.epoch_date_time_UTC + seconds(ekf.t_obs(i)); % Yep, we want time at t_obs(i)!
 
     EOP = Tools.interpolate_EOP(date_time, ENV.EOP_IERS, ENV.EOP_Celestrak);
 
     % Station state
-    [meas.r_stn_ECI_m, meas.v_stn_ECI_m_s] = Tools.ECEF_ECI_Converter( ...
-        S.Stations(meas.station_id).position_ECEF_meters, ...
-        zeros(3,1), date_time, "ECEF_to_ECI", EOP);
+    [curr_meas.r_stn_ECI_m, curr_meas.v_stn_ECI_m_s] = ...
+                                             Tools.ECEF_ECI_Converter( ...
+                                                S.Stations(curr_meas.station_id).position_ECEF_meters, ...
+                                                zeros(3,1), date_time, "ECEF_to_ECI", EOP);
 
     % Prefit
-    meas.r_sat_ECI_m = X_nomial(1:3);
-    meas.v_sat_ECI_m_s = X_nominal(4:6);
+    r_sat_nominal_ECI_m = X_nominal(1:3);
+    v_sat_nominal_ECI_m_s = X_nominal(4:6);
 
-    meas.y_computed = Measurements.Compute_Range_Range_Rate( ...
-        meas.r_sat_ECI_m, meas.v_sat_ECI_m_s, meas.r_stn_ECI_m, meas.v_stn_ECI_m_s);
+    curr_meas.y_computed_meters = Measurements.Compute_Range_Range_Rate( ...
+                                                                    r_sat_nominal_ECI_m, v_sat_nominal_ECI_m_s,... % Before update
+                                                                    curr_meas.r_stn_ECI_m, curr_meas.v_stn_ECI_m_s); % Comptued ECI
 
-    meas.residual = meas.y_meas - meas.y_computed; % In meters and meters per second
-
-    ekf.Y_prefit(:,i) = meas.y_computed;
+    ekf.Y_prefit(:,i) = curr_meas.y_computed_meters;
+    curr_meas.residual = curr_meas.y_obs_meters - curr_meas.y_computed_meters; % In meters and meters per second
 end

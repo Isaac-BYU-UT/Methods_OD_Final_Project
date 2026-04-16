@@ -1,6 +1,6 @@
-function ekf = initialize_ekf(S, ENV)
+function ekf = initialize_ekf(S, ENV, ekf)
 
-    ekf.N_states = 7;
+    ekf.N_states = 6; % Exclude drag
     ekf.station_meas_mask = [S.Scenario.Atoll_on, S.Scenario.Diego_Garcia_on, S.Scenario.Arecibo_on];
 
     if (~S.Scenario.range_on)
@@ -16,25 +16,21 @@ function ekf = initialize_ekf(S, ENV)
     end
 
     STM0 = eye(ekf.N_states);
-    C_drag_estimate = 1.88;
+    % C_drag_estimate = 1.88;
 
-    X0 = [ ...
+    X0_star = [ ...
         S.IC_Sat_Epoch.position_ECI_meters;
         S.IC_Sat_Epoch.velocity_ECI_meters_per_second;
-        C_drag_estimate;
+        % C_drag_estimate;
         STM0(:)
     ];
 
-    ekf.time_struct = ENV.time_struct;
-    ekf.options = odeset('RelTol',3e-10,'AbsTol',1e-12);
-
-    ekf.P_cov = S.StateCovariances;
-
+    ekf.P_cov = S.StateCovariances.P_Covariance_States(1:6,1:6); % a priori p_bar_0, ignore drag
     ekf.t_obs = S.ref_data.Actual_Measurements.time_sec_past_epoch;
     ekf.N_obs = length(ekf.t_obs);
 
     ekf.Y_prefit  = zeros(2, ekf.N_obs);
     ekf.Y_postfit = zeros(2, ekf.N_obs);
 
-    ekf.X_input = X0;
+    ekf.X_input = X0_star; % this is our X_star_t_minus_1
 end
