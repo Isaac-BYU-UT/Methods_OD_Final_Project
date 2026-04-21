@@ -1,5 +1,5 @@
 clear; clc;
-[S,ENV] = Setup.loadSettings('F','HW5',true,true);
+[S,ENV] = Setup.loadSettings('F','HW5',false,false);
 %% Satellite Initial Coordinates
 r0_ECI_meters =     [6990077.798814194;
                     1617465.311978378; 
@@ -57,11 +57,11 @@ sat_is_illuminated = Forces.Vallado_sunLOS(r0_ECI_meters,r_sun_rel_earth_ECI_met
 A_t0 = Forces.get_A_matrix(R0_ECI_meters, V0_ECI_meters_s,C_drag,r_sun_rel_earth_ECI_meters,r_moon_rel_earth_ECI_meters,sat_is_illuminated,R_ECEF_from_ECI);
 H_tilde_t0 = Measurements.Compute_H_matrix(R0_ECI_meters, V0_ECI_meters_s, r0_ECI_station1_meters, v0_ECI_station1_meters_s); % Station 1 is the measurement for t = 0.
 
-A_t0_ref = S.ref_data.A_t0_ref;
-H_tilde_t0_ref = S.ref_data.H_tilde_t0_ref;
+A_t0_ref = S.ref_data.A_t0_ref(1:6,1:6);
+H_tilde_t0_ref = S.ref_data.H_tilde_t0_ref(:,1:6);
 
-relDiff_A = abs((A_t0 - A_t0_ref)./A_t0_ref)
-relDiff_H = abs((H_tilde_t0 - H_tilde_t0_ref)./H_tilde_t0_ref)
+relDiff_A = abs((A_t0 - A_t0_ref)./A_t0_ref) * (1/Units.KILOMETERS)
+relDiff_H = abs((H_tilde_t0 - H_tilde_t0_ref)./H_tilde_t0_ref) * (1/Units.KILOMETERS)
 
 %% Propogate State/STM
 
@@ -78,17 +78,19 @@ abs_tolerance = 1e-16;
 options = odeset('RelTol', relative_tolerance, 'AbsTol', abs_tolerance);
 
 % Initial Conditions
-STM_0 = eye(7);
-y0 = [R0_ECI_meters; V0_ECI_meters_s; C_drag; STM_0(:)];
+% STM_0 = eye(7);
+% y0 = [R0_ECI_meters; V0_ECI_meters_s; C_drag; STM_0(:)];
+STM_0 = eye(6);
+y0 = [R0_ECI_meters; V0_ECI_meters_s; STM_0(:)]; % Remove drag stuff
 
 % Run Integration
 [t, y] = ode45(@(t,X) jah_sat_1_ode(t, X, S, ENV, false), ...
                tspan, y0, options);
 
+%%
+STM_21600_0_ref = S.ref_data.STM_21600_0_ref(1:6,1:6);
 
-STM_21600_0_ref = S.ref_data.STM_21600_0_ref;
-
-STM_21600_0 = reshape(y(end,8:56),7,7);
+STM_21600_0 = reshape(y(end,7:42),6,6);
 
 abs((STM_21600_0 - STM_21600_0_ref)./STM_21600_0_ref)
 

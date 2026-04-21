@@ -125,12 +125,12 @@ Omega_Earth_Vector_Rad_Sec = [0; 0; EOP_params.omega_earth_rad_sec];
 if strcmp(conversion_type,'ECEF_to_ECI') % This is ITRF to GCRF, which is the same as ECEF to ECI
     r_PEF_km = M*r_original_km;
     r_converted_km = P*N*S*M*r_original_km;
-    v_converted_km_sec = P*N*S*(M*v_original_km_sec + cross(Omega_Earth_Vector_Rad_Sec,r_PEF_km));
+    v_converted_km_sec = P*N*S*(M*v_original_km_sec + Tools.crossProductEquivalent(Omega_Earth_Vector_Rad_Sec) * (r_PEF_km));
 
 elseif strcmp(conversion_type,'ECI_to_ECEF') % This is GCRF to ITRF, which is the same as ECI to ECEF
     r_PEF_km = S.'*N.'*P.'*r_original_km;
     r_converted_km = M.'*r_PEF_km;
-    v_converted_km_sec = M.'*(S.'*N.'*P.'*v_original_km_sec - cross(Omega_Earth_Vector_Rad_Sec,r_PEF_km));
+    v_converted_km_sec = M.'*(S.'*N.'*P.'*v_original_km_sec - Tools.crossProductEquivalent(Omega_Earth_Vector_Rad_Sec) * (r_PEF_km));
 end
 
 R_ECI_from_ECEF = P*N*S*M;

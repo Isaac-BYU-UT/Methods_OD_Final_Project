@@ -46,7 +46,7 @@ a_total_simple = a_2B + a_Zonals + a_Drag + a_LuniSolar + a_SRP; % In the future
 % --- Compute Partials (The heavy lifting) ---
 da_dr = jacobian(a_total_simple, r_ECI_meters);
 da_dv = jacobian(a_total_simple, v_ECI_meters_s);
-% da_dCd = jacobian(a_total_simple, SatelliteProperties.C_Drag);
+% da_dCd = jacobian(a_total_simple, C_drag);
 
 % --- Generate Optimized Files ---
 vars = {r_ECI_meters, v_ECI_meters_s, C_drag, ... 

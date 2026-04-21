@@ -1,11 +1,11 @@
 clear; clc;
 
 %% SETUP
-i_case = 7;
+i_case = 6;
 case_names = {'A','B','C','D','E','F','G'};
 scenario_config = {'Accel','Final_3D','Final_1D','HW5'};
 
-[S, ENV] = Setup.loadSettings(case_names{i_case},'Final_1D',false,false);
+[S, ENV] = Setup.loadSettings(case_names{i_case},'Final_3D',false,false);
 
 %%
 ekf.options = odeset('RelTol',3e-9,'AbsTol',1e-11);
@@ -22,11 +22,14 @@ if ekf.print_updates
     disp('Covariance Original:'); disp(ekf.P_cov);
 end
 
-%% FIRST OBS
+#% FIRST OBS
 if ekf.t_obs(1) == 0
     ekf.current_index = 1;
     ekf = EKF.process_first_observation(ekf, S, ENV);
     % We just pass back ekf, this hold the new X_nominal state and P_cov.
+    % Record initial trace
+    ekf.trace_post_update(1) = trace(ekf.P_cov);
+    ekf.trace_post_propagation(1) = trace(ekf.P_cov);
 end
 
 %% MAIN LOOP
@@ -52,7 +55,7 @@ for i = 2:ekf.N_obs
         X_states_updated(1:3),X_states_updated(4:6), meas.r_stn_ECI_m, meas.v_stn_ECI_m_s);
 
     % ---- LOG ----
-    EKF.log_step(ekf, dx, P_cov_updated, i);
+    EKF.log_step(ekf, dx, P_cov_updated, i, P_bar);
 
     % ---- PREP NEXT ----
     STM_reset = reshape(eye(ekf.N_states),[],1);
@@ -81,6 +84,9 @@ Visuals.plot_measurement_correlation_linked(Prefit_Measurement_Table);
 Postfit_Measurement_Table = Visuals.make_measurement_table(ekf.t_obs,S.ref_data.Actual_Measurements,transpose(ekf.Y_postfit));
 Visuals.plot_station_residuals(Postfit_Measurement_Table, {S.Stations.name});
 Visuals.plot_measurement_correlation_linked(Postfit_Measurement_Table);
+
+%% Covariance Trace Evolution
+Visuals.plot_covariance_trace(ekf);
 
 %% Now, propagate state and covariance to dV1 = 30 March 2018, 08:55:03 UTC.
 

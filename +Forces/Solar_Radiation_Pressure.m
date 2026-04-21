@@ -17,8 +17,8 @@ function accel_solar_radiation_pressure_meters_s2 = Solar_Radiation_Pressure(r_s
 
     
     % Calculate reflection coefficients per the image
-    nu = SatelliteProperties.SOLAR_CELLS_CD; % Diffuse reflection coefficient
-    mu = SatelliteProperties.SOLAR_CELLS_CS; % Specular reflection coefficients                                 % Specular reflection coefficient
+    nu = (1/3) * SatelliteProperties.SOLAR_CELLS_CD; % Diffuse reflection coefficient, 1/3 * (1 - beta) * gamma (assume gamma = 1)
+    mu = (1/2) *  SatelliteProperties.SOLAR_CELLS_CS; % Specular reflection coefficient, (1/2) * Beta * gamma (assume gamma = 1)
     
     % Bidirectional reflectance term
     B_theta = 2 * nu * cosd(phi_inclination_deg) + 4 * mu * cosd(phi_inclination_deg)^2;
