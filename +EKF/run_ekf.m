@@ -3,9 +3,9 @@ clear; clc;
 %% SETUP
 i_case = 6;
 case_names = {'A','B','C','D','E','F','G'};
-scenario_config = {'Accel','Final_3D','Final_1D','HW5'};
+scenario_config = {'Accel','Final_3D','Final_3D','HW5'};
 
-[S, ENV] = Setup.loadSettings(case_names{i_case},'Final_3D',false,false);
+[S, ENV] = Setup.loadSettings(case_names{i_case},'Final_1D',false,false);
 
 %%
 ekf.options = odeset('RelTol',3e-9,'AbsTol',1e-11);
@@ -22,7 +22,7 @@ if ekf.print_updates
     disp('Covariance Original:'); disp(ekf.P_cov);
 end
 
-#% FIRST OBS
+%% FIRST OBS
 if ekf.t_obs(1) == 0
     ekf.current_index = 1;
     ekf = EKF.process_first_observation(ekf, S, ENV);
@@ -38,10 +38,10 @@ for i = 2:ekf.N_obs
     ekf.current_index = i;
 
     % ---- PROPAGATE ----
-    [X_states_propogated, STM_propogated, y_ode_prop] = EKF.propagate_state(ekf, S, ENV); % X_nominal at time t_obs(i)!
+    [X_states_propogated, STM_propogated, y_ode_prop, delta_t] = EKF.propagate_state(ekf, S, ENV); % X_nominal at time t_obs(i)!
 
     % ---- TIME UPDATE ----
-    P_bar = EKF.time_update_covariance(ekf, STM_propogated);
+    P_bar = EKF.time_update_covariance(ekf, STM_propogated, delta_t, S);
 
     % ---- MEASUREMENT ----
     [meas, ekf] = EKF.compute_measurement(ekf, S, ENV, X_states_propogated);
@@ -50,12 +50,19 @@ for i = 2:ekf.N_obs
     [X_states_updated, P_cov_updated, dx] = EKF.ekf_update( ...
         ekf, X_states_propogated, P_bar, meas, S, ENV);
 
+    % if (ekf.print_updates) 
+    %     disp("Eig of Cov:"); disp(eig(P_cov_updated));
+    %     disp("ekf.P_cov");disp(ekf.P_cov);disp(det(ekf.P_cov));
+    %     disp("P_bar"); disp(P_bar);disp(det(P_bar));
+    %     disp("P_cov_updated"); disp(P_cov_updated);disp(det(P_cov_updated));
+    % end
+
     % ---- POSTFIT ----
     ekf.Y_postfit(:,i) = Measurements.Compute_Range_Range_Rate( ...
         X_states_updated(1:3),X_states_updated(4:6), meas.r_stn_ECI_m, meas.v_stn_ECI_m_s);
 
     % ---- LOG ----
-    EKF.log_step(ekf, dx, P_cov_updated, i, P_bar);
+    ekf = EKF.log_step(ekf, dx, P_cov_updated, i, P_bar);
 
     % ---- PREP NEXT ----
     STM_reset = reshape(eye(ekf.N_states),[],1);

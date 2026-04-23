@@ -1,4 +1,4 @@
-function [X_states_propogated, STM_propogated, y_ode_prop] = propagate_state(ekf,S, ENV)
+function [X_states_propogated, STM_propogated, y_ode_prop, delta_t] = propagate_state(ekf,S, ENV)
 
     i = ekf.current_index;
 
@@ -14,6 +14,8 @@ function [X_states_propogated, STM_propogated, y_ode_prop] = propagate_state(ekf
         [ekf.t_obs(i-1), ekf.t_obs(i)], ekf.X_input, ekf.options);
 
     end
+
+    delta_t = ekf.t_obs(i) - ekf.t_obs(i-1);
 
     X_full_propagated = transpose(y_ode_prop(end,:)); % Make this a column vector
 

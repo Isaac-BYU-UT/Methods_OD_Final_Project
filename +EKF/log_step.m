@@ -1,4 +1,4 @@
-function log_step(ekf, dx, P_cov_updated, i, varargin)
+function ekf =  log_step(ekf, dx, P_cov_updated, i, varargin)
     % Inputs:
     %   ekf - EKF structure
     %   dx - state correction
@@ -10,6 +10,7 @@ function log_step(ekf, dx, P_cov_updated, i, varargin)
         fprintf('Step %d / %d\n', i, ekf.N_obs);
         disp('State correction:'); disp(transpose(dx));
         disp('Covariance Update:'); disp(P_cov_updated);
+        disp('Covariance Det:'); disp(det(P_cov_updated));
     end
     
     % Record trace before propagation (from previous iteration)
