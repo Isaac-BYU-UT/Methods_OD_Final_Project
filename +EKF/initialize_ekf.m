@@ -1,18 +1,18 @@
-function ekf = initialize_ekf(S, ENV, ekf)
+function [S,ekf] = initialize_ekf(S, ENV, ekf)
 
     ekf.N_states = 6; % Exclude drag
     ekf.station_meas_mask = [S.Scenario.Atoll_on, S.Scenario.Diego_Garcia_on, S.Scenario.Arecibo_on];
 
     if (~S.Scenario.range_on)
-        S.Stations(1).Covariance(1,1) = 1e12; % effectively infinite variance for range
-        S.Stations(2).Covariance(1,1) = 1e12;
-        S.Stations(3).Covariance(1,1) = 1e12;
+        S.Stations(1).Covariance(1,1) = 1e16; % effectively infinite variance for range
+        S.Stations(2).Covariance(1,1) = 1e16;
+        S.Stations(3).Covariance(1,1) = 1e16;
     end
 
     if (~S.Scenario.range_rate_on)
-        S.Stations(1).Covariance(2,2) = 1e12; % effectively infinite variance for range rate
-        S.Stations(2).Covariance(2,2) = 1e12;
-        S.Stations(3).Covariance(2,2) = 1e12;
+        S.Stations(1).Covariance(2,2) = 1e16; % effectively infinite variance for range rate
+        S.Stations(2).Covariance(2,2) = 1e16;
+        S.Stations(3).Covariance(2,2) = 1e16;
     end
 
     STM0 = eye(ekf.N_states);

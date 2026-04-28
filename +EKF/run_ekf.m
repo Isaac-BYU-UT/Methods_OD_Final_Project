@@ -1,21 +1,23 @@
 clear; clc;
 
 %% SETUP
-i_case = 6;
+i_case = 2;
 case_names = {'A','B','C','D','E','F','G'};
-scenario_config = {'Accel','Final_3D','Final_3D','HW5'};
 
-[S, ENV] = Setup.loadSettings(case_names{i_case},'Final_1D',false,false);
+i_scenario = 3;
+scenario_config = {'Accel','Final_3D','Final_3D','Final_6D','HW5'};
+
+[S, ENV] = Setup.loadSettings(case_names{i_case},scenario_config{i_scenario},false,false);
 
 %%
-ekf.options = odeset('RelTol',3e-9,'AbsTol',1e-11);
+ekf.options = odeset('RelTol',1e-9,'AbsTol',1e-12);
 ekf.time_struct_epoch = ENV.time_struct_epoch;
 ekf.print_updates = true;
 ekf.f_updates = 40;
 ekf.debug_on = false;
 ekf.ode_type ='ode45';
 
-ekf = EKF.initialize_ekf(S, ENV, ekf);
+[S, ekf] = EKF.initialize_ekf(S, ENV, ekf);
 
 if ekf.print_updates
     disp('State Original:'); disp(transpose(ekf.X_input(1:ekf.N_states)));
@@ -86,7 +88,6 @@ Prefit_Measurement_Table = Visuals.make_measurement_table(ekf.t_obs,S.ref_data.A
 Visuals.plot_station_residuals(Prefit_Measurement_Table, {S.Stations.name});
 Visuals.plot_measurement_correlation_linked(Prefit_Measurement_Table);
 
-
 %% Postfit Residuals
 Postfit_Measurement_Table = Visuals.make_measurement_table(ekf.t_obs,S.ref_data.Actual_Measurements,transpose(ekf.Y_postfit));
 Visuals.plot_station_residuals(Postfit_Measurement_Table, {S.Stations.name});
@@ -135,5 +136,5 @@ Visuals.plot_position(r_final_ECI_meters, v_final_ECI_meters_sec, P_cov_final, o
 
 %%
 timestamp = string(datetime('now', 'Format', 'yyyy-MM-dd_HH-mm-ss'));
-file_name = sprintf('Results/EKF_Results_%s_%s.mat', case_names{i_case}, timestamp);
+file_name = sprintf('Results/EKF_Results_%s_%s_%s.mat', case_names{i_case},scenario_config{i_scenario}, timestamp);
 save(file_name);

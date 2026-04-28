@@ -9,7 +9,7 @@ function ekf =  log_step(ekf, dx, P_cov_updated, i, varargin)
     if ekf.print_updates && mod(i,ekf.f_updates)==0
         fprintf('Step %d / %d\n', i, ekf.N_obs);
         disp('State correction:'); disp(transpose(dx));
-        disp('Covariance Update:'); disp(P_cov_updated);
+        % disp('Covariance Update:'); disp(P_cov_updated);
         disp('Covariance Det:'); disp(det(P_cov_updated));
     end
     

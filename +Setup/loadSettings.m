@@ -25,11 +25,22 @@ S.scenario_config = scenario_config;
             S.ref_data = Tools.get_reference_data_1Day_Subset();
             S.StateCovariances = Setup.loadStateCovariances_v0();
             S.Stations = Setup.loadStations_Final();
+
+        case 'Final_6D' % Final -- 6 Day Subset
+            S.IC_Sat_Epoch = Setup.loadSatInitialConditions_Final();
+            S.ref_data = Tools.get_reference_data_All6Days();
+            S.StateCovariances = Setup.loadStateCovariances_v0();
+            S.Stations = Setup.loadStations_Final();
+
         case 'HW5' %'HW5 Subset - 6 Hours'
             S.IC_Sat_Epoch = Setup.loadSatInitialConditions_HW5();
             S.ref_data = Tools.get_reference_data_HW5();
             S.StateCovariances = Setup.loadStateCovariances_v0();
             S.Stations = Setup.loadStations_HW5();
+
+        case '24Dynamics'
+            S.IC_Sat_Epoch = Setup.loadSatInitialConditions_24Ref();
+            
     end
 %% Load in EOP Stuff
     EOP_data = Tools.get_EOP_data();

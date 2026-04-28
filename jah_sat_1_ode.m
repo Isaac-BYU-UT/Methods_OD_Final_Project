@@ -22,6 +22,8 @@ function X_state_dot = jah_sat_1_ode(t, X, S, ENV, debug_on)
     EOP_params_t = Tools.interpolate_EOP(date_time_t,ENV.EOP_IERS, ENV.EOP_Celestrak);
     [~, ~, R_ECI_from_ECEF, R_ECEF_from_ECI] = Tools.ECEF_ECI_Converter(r_ECI_m, v_ECI_m_s, date_time_t, "ECI_to_ECEF", EOP_params_t);
 
+    Forces.Atmospheric_Drag(r_ECI_m,v_ECI_m_s,1.88,r_sun_rel_earth_ECI_meters);
+
     % Compute and Propogate STM
     % -------------------------
     A_matrix = Forces.get_A_matrix(...
@@ -56,7 +58,7 @@ function X_state_dot = jah_sat_1_ode(t, X, S, ENV, debug_on)
 
     % For Debug Purposes Only
     % ------------------------
-    if (debug_on)
+    if (debug_on && t == 0.0)
         a_component_ECI_m_s2 = Forces.Compute_Component_Acceleration_ECI_m_s2(...
                                         r_ECI_m,v_ECI_m_s,C_drag,...
                                         r_sun_rel_earth_ECI_meters(:),...

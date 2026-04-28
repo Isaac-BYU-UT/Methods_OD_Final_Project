@@ -1,15 +1,15 @@
 clear; clc;
 
-results_dir = 'Results/4_23_2026/';
+results_dir = 'Results/4_28_2026/';
 
 % Initialize all cases as NaN (default)
-sorensen_pos_caseA = NaN(3,1); sorensen_poscov_caseA = NaN(6,6);
-sorensen_pos_caseB = NaN(3,1); sorensen_poscov_caseB = NaN(6,6);
-sorensen_pos_caseC = NaN(3,1); sorensen_poscov_caseC = NaN(6,6);
-sorensen_pos_caseD = NaN(3,1); sorensen_poscov_caseD = NaN(6,6);
-sorensen_pos_caseE = NaN(3,1); sorensen_poscov_caseE = NaN(6,6);
-sorensen_pos_caseF = NaN(3,1); sorensen_poscov_caseF = NaN(6,6);
-sorensen_pos_caseG = NaN(3,1); sorensen_poscov_caseG = NaN(6,6);
+sorensen_pos_caseA = NaN(3,1); sorensen_vel_caseA = NaN(3,1); sorensen_poscov_caseA = NaN(3,3);
+sorensen_pos_caseB = NaN(3,1); sorensen_vel_caseB = NaN(3,1); sorensen_poscov_caseB = NaN(3,3);
+sorensen_pos_caseC = NaN(3,1); sorensen_vel_caseC = NaN(3,1); sorensen_poscov_caseC = NaN(3,3);
+sorensen_pos_caseD = NaN(3,1); sorensen_vel_caseD = NaN(3,1); sorensen_poscov_caseD = NaN(3,3);
+sorensen_pos_caseE = NaN(3,1); sorensen_vel_caseE = NaN(3,1); sorensen_poscov_caseE = NaN(3,3);
+sorensen_pos_caseF = NaN(3,1); sorensen_vel_caseF = NaN(3,1); sorensen_poscov_caseF = NaN(3,3);
+sorensen_pos_caseG = NaN(3,1); sorensen_vel_caseG = NaN(3,1); sorensen_poscov_caseG = NaN(3,3);
 
 files = dir(fullfile(results_dir, '*.mat'));
 
@@ -25,52 +25,67 @@ for i = 1:length(files)
     else
         r = NaN(3,1);
     end
-    
-    if isfield(data, ' P_cov_final')
-        P = data. P_cov_final;
+
+    if isfield(data,'v_final_ECI_meters_sec')
+        v = data.v_final_ECI_meters_sec;
     else
-        P = NaN(6,6);
+        v = NaN(3,1);
+    end
+    
+    if isfield(data, 'P_cov_final')
+        P = data.P_cov_final(1:3,1:3); % Extract only the position covariance
+    else
+        P = NaN(3,3);
     end
 
     % Case (a): Range only, all stations
     if contains(filename, '_A_')
         sorensen_pos_caseA = r;
+        sorensen_vel_caseA = v;
         sorensen_poscov_caseA = P;
     end
     
     % Case (b): Range + Range-rate, all stations
     if contains(filename, '_B_')
         sorensen_pos_caseB = r;
+        sorensen_vel_caseB = v;
         sorensen_poscov_caseB = P;
     end
     
     % Case (c): Kwajalein (Atoll)
     if contains(filename, '_C_')
         sorensen_pos_caseC = r;
+        sorensen_vel_caseC = v;
         sorensen_poscov_caseC = P;
     end
     
     % Case (d): Diego Garcia
     if contains(filename, '_D_')
         sorensen_pos_caseD = r;
+        sorensen_vel_caseD = v;
         sorensen_poscov_caseD = P;
     end
     
     % Case (e): Arecibo
     if contains(filename, '_E_')
         sorensen_pos_caseE = r;
+        sorensen_vel_caseE = v;
         sorensen_poscov_caseE = P;
     end
 
     % Case (f): Long Arc
     if contains(filename, '_F_')
-        sorensen_pos_caseG = r;
-        sorensen_poscov_caseG = P;
+        sorensen_pos_caseF = r;
+        sorensen_vel_caseF = v;
+        sorensen_poscov_caseF = P;
     end
 
     % Case (g): Short Arc (All station, all data)
     if contains(filename, '_G_')
         sorensen_pos_caseG = r;
+        sorensen_vel_caseG = v;
         sorensen_poscov_caseG = P;
     end
 end
+
+save(results_dir + "sorensen.mat")

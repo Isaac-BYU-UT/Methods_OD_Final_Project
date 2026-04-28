@@ -4,9 +4,9 @@ function StateCovariances = loadStateCovariances_v0()
     StateCovariances.sigma_velocity_meters_per_sec = 10;
     StateCovariances.sigma_drag_coefficient = 0.05;
 
-    StateCovariances.sigma_x_accel_meters_per_sec2 = 10e-8; % TODO: TUNE THIS GUESS! % If we go larger than 10e-8, we get problems!
-    StateCovariances.sigma_y_accel_meters_per_sec2 = 10e-8; % TODO: TUNE THIS GUESS! % If we go larger than 10e-8, we get problems!
-    StateCovariances.sigma_z_accel_meters_per_sec2 = 10e-8; % TODO: TUNE THIS GUESS! % If we go larger than 10e-8, we get problems!
+    StateCovariances.sigma_x_accel_meters_per_sec2 = 10e-5; % TODO: TUNE THIS GUESS! % If we go larger than 10e-8, we get problems!
+    StateCovariances.sigma_y_accel_meters_per_sec2 = 10e-5; % TODO: TUNE THIS GUESS! % If we go larger than 10e-8, we get problems!
+    StateCovariances.sigma_z_accel_meters_per_sec2 = 10e-5; % TODO: TUNE THIS GUESS! % If we go larger than 10e-8, we get problems!
 
     StateCovariances.P_Covariance_States = diag([StateCovariances.sigma_position_meters^2, ...
                                                 StateCovariances.sigma_position_meters^2, ...
