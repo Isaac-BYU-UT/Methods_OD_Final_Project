@@ -4,7 +4,7 @@ function ekf = process_first_observation(ekf, S, ENV)
     X_nominal = ekf.X_input(1:ekf.N_states); % This is just our initial condition
     [curr_meas, ekf] = EKF.compute_measurement(ekf, S, ENV, X_nominal); % Before updating X
 
-    [X_updated, P_cov_updated, dx] = EKF.ekf_update( ...
+    [X_updated, P_cov_updated, dx, ekf] = EKF.ekf_update( ...
         ekf, X_nominal, ekf.P_cov, curr_meas, S, ENV);
     
     r_sat_updated_ECI_m = X_updated(1:3);

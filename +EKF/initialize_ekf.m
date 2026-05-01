@@ -31,11 +31,9 @@ function [S,ekf] = initialize_ekf(S, ENV, ekf)
 
     ekf.Y_prefit  = zeros(2, ekf.N_obs);
     ekf.Y_postfit = zeros(2, ekf.N_obs);
-    
-    % Covariance trace tracking
-    ekf.trace_pre_propagation = zeros(ekf.N_obs, 1);   % trace before propagation
-    ekf.trace_post_propagation = zeros(ekf.N_obs, 1);  % trace after propagation (P_bar)
-    ekf.trace_post_update = zeros(ekf.N_obs, 1);       % trace after measurement update
+
+    ekf.P_zz_prefit = zeros(2,2, ekf.N_obs);
+    ekf.P_zz_postfit = zeroz(2,2, ekf.N_obs);
 
     ekf.X_input = X0_star; % this is our X_star_t_minus_1
 end

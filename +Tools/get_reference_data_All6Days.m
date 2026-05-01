@@ -10,7 +10,7 @@ function ref_data = get_reference_data_All6Days()
         Actual_Measurements_A = array2table(Actual_Measurements_A); % Convert to table for easier handling
         Actual_Measurements_A.Properties.VariableNames = {'station_id', 'time_sec_past_epoch', 'apparent_range_km', 'apparent_range_rate_km_s'}; % Make the variable names more intuitive
 
-        Actual_Measurements_B = load('ref_data/LEO_DATA_Apparent_3Days.mat').LEO_DATA_Apparent;
+        Actual_Measurements_B = load('ref_data/LEO_DATA_Apparent_Days4-6.mat').LEO_DATA_Apparent;
         
         Actual_Measurements_B = array2table(Actual_Measurements_B); % Convert to table for easier handling
         Actual_Measurements_B.Properties.VariableNames = {'station_id', 'time_sec_past_epoch', 'apparent_range_km', 'apparent_range_rate_km_s'}; % Make the variable names more intuitive

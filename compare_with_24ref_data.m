@@ -3,7 +3,7 @@ clear; clc;
 %% SETUP -- just because we need the ENV and S stuff
 case_names = {'A','B','C','D','E','F'};
 scenario_config = {'Accel','Final_3D','Final_1D','HW5','24Dynamics'};
-[S, ENV] = Setup.loadSettings('F','24Dynamics',true,false);
+[S, ENV] = Setup.loadSettings('F','24Dynamics',false,false);
 
 %%
 STM_0 = eye(6);
@@ -12,7 +12,7 @@ y0 = [S.IC_Sat_Epoch.position_ECI_meters;...
       STM_0(:)];
 
 tic;
-options = odeset('RelTol',1e-14,'AbsTol',1e-16);
+options = odeset('RelTol',1e-12,'AbsTol',1e-14);
 tspan = 0:60:Units.SEC_IN_SOLAR_DAY;
 [t, y] = ode113(@(t,X) jah_sat_1_ode( ...
         t, X, S, ENV, true), ...

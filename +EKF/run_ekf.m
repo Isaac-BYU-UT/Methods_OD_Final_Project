@@ -4,7 +4,7 @@ clear; clc;
 i_case = 6;
 case_names = {'A','B','C','D','E','F','G'};
 
-i_scenario = 2;
+i_scenario = 4;
 scenario_config = {'Accel','Final_1D','Final_3D','Final_6D','HW5','24Dynamics'};
 
 [S, ENV] = Setup.loadSettings(case_names{i_case},scenario_config{i_scenario},false,false);
@@ -48,8 +48,8 @@ for i = 2:ekf.N_obs
     % ---- MEASUREMENT ----
     [meas, ekf] = EKF.compute_measurement(ekf, S, ENV, X_states_propogated);
 
-    % ---- UPDATE ----
-    [X_states_updated, P_cov_updated, dx] = EKF.ekf_update( ...
+    % ---- UPDATE and POSTFIT ----
+    [X_states_updated, P_cov_updated, dx, ekf] = EKF.ekf_update( ...
         ekf, X_states_propogated, P_bar, meas, S, ENV);
 
     % if (ekf.print_updates) 
@@ -58,10 +58,6 @@ for i = 2:ekf.N_obs
     %     disp("P_bar"); disp(P_bar);disp(det(P_bar));
     %     disp("P_cov_updated"); disp(P_cov_updated);disp(det(P_cov_updated));
     % end
-
-    % ---- POSTFIT ----
-    ekf.Y_postfit(:,i) = Measurements.Compute_Range_Range_Rate( ...
-        X_states_updated(1:3),X_states_updated(4:6), meas.r_stn_ECI_m, meas.v_stn_ECI_m_s);
 
     % ---- LOG ----
     ekf = EKF.log_step(ekf, dx, P_cov_updated, i, P_bar);
