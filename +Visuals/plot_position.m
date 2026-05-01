@@ -51,7 +51,7 @@ function plot_position(r_ECI, v_ECI, P_ECI, full_orbit_ECI)
         
         % Zoom in on the satellite/covariance
         % Adjust this multiplier to see more or less of the orbit
-        limit = 1000 * Units.KILOMETERS; 
+        limit = 1 * Units.KILOMETERS; 
         xlim([-limit, limit]); ylim([-limit, limit]);
     end
 end

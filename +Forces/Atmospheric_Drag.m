@@ -28,7 +28,6 @@ function accel_drag_meters_s2 = Atmospheric_Drag(r_ECI_meters, v_ECI_meters_s, C
                   SatelliteProperties.AREA_Z_FACE_M2 * abs(dot(v_rel_hat_unit,z_hat_unit_vec_ECI)) + ...
                     SatelliteProperties.AREA_SOLAR_PANEL_M2 * abs(dot(v_rel_hat_unit,solar_panel_unit_vec));
 
-
     % Trying wit simplified model -- assume x-face almost always faces
     % velocity.
     % Area_m2 = SatelliteProperties.AREA_X_FACE_M2 + ...

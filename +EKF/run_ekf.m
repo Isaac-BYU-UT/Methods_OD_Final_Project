@@ -13,7 +13,7 @@ scenario_config = {'Accel','Final_1D','Final_3D','Final_6D','HW5','24Dynamics'};
 ekf.options = odeset('RelTol',1e-12,'AbsTol',1e-14);
 ekf.time_struct_epoch = ENV.time_struct_epoch;
 ekf.print_updates = true;
-ekf.f_updates = 40;
+ekf.f_updates = 1;
 ekf.debug_on = false;
 ekf.ode_type ='ode113';
 
@@ -27,11 +27,9 @@ end
 %% FIRST OBS
 if ekf.t_obs(1) == 0
     ekf.current_index = 1;
-    ekf = EKF.process_first_observation(ekf, S, ENV);
-    % We just pass back ekf, this hold the new X_nominal state and P_cov.
-    % Record initial trace
-    ekf.trace_post_update(1) = trace(ekf.P_cov);
-    ekf.trace_post_propagation(1) = trace(ekf.P_cov);
+
+    ekf = EKF.process_first_observation(ekf, S, ENV); % We just pass back ekf, this hold the new X_nominal state and P_cov.
+    
 end
 
 %% MAIN LOOP
@@ -45,19 +43,12 @@ for i = 2:ekf.N_obs
     % ---- TIME UPDATE ----
     P_bar = EKF.time_update_covariance(ekf, STM_propogated, delta_t, S);
 
-    % ---- MEASUREMENT ----
-    [meas, ekf] = EKF.compute_measurement(ekf, S, ENV, X_states_propogated);
+    % ---- MEASUREMENT ---- (Stores prefit values)
+    [curr_meas, ekf] = EKF.compute_measurement(ekf, S, ENV, X_states_propogated);
 
-    % ---- UPDATE and POSTFIT ----
+    % ---- UPDATE and POSTFIT ---- (Stores P_zz prefit/postfit, and postfit values)
     [X_states_updated, P_cov_updated, dx, ekf] = EKF.ekf_update( ...
-        ekf, X_states_propogated, P_bar, meas, S, ENV);
-
-    % if (ekf.print_updates) 
-    %     disp("Eig of Cov:"); disp(eig(P_cov_updated));
-    %     disp("ekf.P_cov");disp(ekf.P_cov);disp(det(ekf.P_cov));
-    %     disp("P_bar"); disp(P_bar);disp(det(P_bar));
-    %     disp("P_cov_updated"); disp(P_cov_updated);disp(det(P_cov_updated));
-    % end
+        ekf, X_states_propogated, P_bar, curr_meas, S, ENV);
 
     % ---- LOG ----
     ekf = EKF.log_step(ekf, dx, P_cov_updated, i, P_bar);
@@ -72,25 +63,7 @@ end
 r_sat_end_of_filter_ECI_m = ekf.X_input(1:3);
 v_sat_end_of_filter_ECI_m_s = ekf.X_input(4:6);
 P_cov_end_of_filter = ekf.P_cov;
-orbit_chunk_ECI = y_ode_prop(:,1:6);
-
-%% RIC Plots
-disp("Final State after filter:"); disp(r_sat_end_of_filter_ECI_m'); disp(v_sat_end_of_filter_ECI_m_s');
-disp("Final Covariance after filter:"); disp(P_cov_end_of_filter);
-Visuals.plot_position(r_sat_end_of_filter_ECI_m, v_sat_end_of_filter_ECI_m_s, P_cov_end_of_filter, orbit_chunk_ECI);
-
-%% Prefit Residuals
-Prefit_Measurement_Table = Visuals.make_measurement_table(ekf.t_obs,S.ref_data.Actual_Measurements,transpose(ekf.Y_prefit));
-Visuals.plot_station_residuals(Prefit_Measurement_Table, {S.Stations.name});
-Visuals.plot_measurement_correlation_linked(Prefit_Measurement_Table);
-
-%% Postfit Residuals
-Postfit_Measurement_Table = Visuals.make_measurement_table(ekf.t_obs,S.ref_data.Actual_Measurements,transpose(ekf.Y_postfit));
-Visuals.plot_station_residuals(Postfit_Measurement_Table, {S.Stations.name});
-Visuals.plot_measurement_correlation_linked(Postfit_Measurement_Table);
-
-%% Covariance Trace Evolution
-% Visuals.plot_covariance_trace(ekf);
+orbit_chunk_ECI_end_of_filter = y_ode_prop(:,1:6); % This will just get the final chunk of the filtration.
 
 %% Now, propagate state and covariance to dV1 = 30 March 2018, 08:55:03 UTC.
 
@@ -110,26 +83,38 @@ t, X, S, ENV, ekf.debug_on), ...
 [ekf.t_obs(end), t_dV1_sec], ekf.X_input, ekf.options);
 end
 
-    X_full_propagated = transpose(y_final(end,:)); % Make this a column vector
+X_full_propagated = transpose(y_final(end,:)); % Make this a column vector
 
-    X_states_propogated = X_full_propagated(1:ekf.N_states);
+X_states_propogated = X_full_propagated(1:ekf.N_states);
 
-    STM_propogated = reshape(X_full_propagated(ekf.N_states+1:end), ...
-                  ekf.N_states, ekf.N_states);
+STM_propogated = reshape(X_full_propagated(ekf.N_states+1:end), ...
+              ekf.N_states, ekf.N_states);
 
 r_final_ECI_meters = X_states_propogated(1:3);
 v_final_ECI_meters_sec = X_states_propogated(4:6);
 P_cov_final = STM_propogated * ekf.P_cov * transpose(STM_propogated);
-orbit_chunk_ECI = y_final(:,1:6);
-%%
-Visuals.plot_RIC(r_final_ECI_meters, v_final_ECI_meters_sec, P_cov_final, orbit_chunk_ECI,false);
+orbit_chunk_ECI_final = y_final(:,1:6);
+
+%% RIC Plots (AFTER FILTER ONLY)
+disp("Final State after filter:"); disp(r_sat_end_of_filter_ECI_m'); disp(v_sat_end_of_filter_ECI_m_s');
+disp("Final Covariance after filter:"); disp(P_cov_end_of_filter);
+Visuals.plot_position(r_sat_end_of_filter_ECI_m, v_sat_end_of_filter_ECI_m_s, P_cov_end_of_filter, orbit_chunk_ECI_end_of_filter);
+
+%% Prefit Residuals (AFTER FILTER ONLY)
+Prefit_Measurement_Table = Visuals.make_measurement_table(ekf.t_obs,S.ref_data.Actual_Measurements,transpose(ekf.Y_prefit));
+Visuals.plot_station_residuals(Prefit_Measurement_Table, {S.Stations.name}, ekf.P_zz_prefit);
+
+%% Postfit Residuals (AFTER FILTER ONLY)
+Postfit_Measurement_Table = Visuals.make_measurement_table(ekf.t_obs,S.ref_data.Actual_Measurements,transpose(ekf.Y_postfit));
+Visuals.plot_station_residuals(Postfit_Measurement_Table, {S.Stations.name}, ekf.P_zz_postfit);
+
+%%  RIC Plots (Final)
+Visuals.plot_RIC(r_final_ECI_meters, v_final_ECI_meters_sec, P_cov_final, orbit_chunk_ECI_final,false);
 
 disp("Final State:"); disp(r_final_ECI_meters'); disp(v_final_ECI_meters_sec');
 disp("Final Covariance:"); disp(P_cov_final);
-Visuals.plot_position(r_final_ECI_meters, v_final_ECI_meters_sec, P_cov_final, orbit_chunk_ECI);
-
-
-%%
+Visuals.plot_position(r_final_ECI_meters, v_final_ECI_meters_sec, P_cov_final, orbit_chunk_ECI_final);
+%% Save All Data
 timestamp = string(datetime('now', 'Format', 'yyyy-MM-dd_HH-mm-ss'));
 file_name = sprintf('Results/EKF_Results_%s_%s_%s.mat', case_names{i_case},scenario_config{i_scenario}, timestamp);
 save(file_name);

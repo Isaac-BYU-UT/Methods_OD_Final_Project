@@ -29,11 +29,11 @@ function [S,ekf] = initialize_ekf(S, ENV, ekf)
     ekf.t_obs = S.ref_data.Actual_Measurements.time_sec_past_epoch;
     ekf.N_obs = length(ekf.t_obs);
 
-    ekf.Y_prefit  = zeros(2, ekf.N_obs);
-    ekf.Y_postfit = zeros(2, ekf.N_obs);
+    ekf.Y_prefit  = NaN(2, ekf.N_obs); % Hopefully this means we'll skip plotting for ommitted stations
+    ekf.Y_postfit = NaN(2, ekf.N_obs); % Hopefully this means we'll skip plotting for ommitted stations
 
-    ekf.P_zz_prefit = zeros(2,2, ekf.N_obs);
-    ekf.P_zz_postfit = zeroz(2,2, ekf.N_obs);
+    ekf.P_zz_prefit = NaN(2,2, ekf.N_obs); % Hopefully this means we'll skip plotting for ommitted stations
+    ekf.P_zz_postfit = NaN(2,2, ekf.N_obs); % Hopefully this means we'll skip plotting for ommitted stations
 
     ekf.X_input = X0_star; % this is our X_star_t_minus_1
 end

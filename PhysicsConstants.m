@@ -16,6 +16,7 @@ classdef PhysicsConstants
         J4_EARTH          = -0.0000016204 %-1.61989759991697e-06 % from Vallado D-1 (EGM-08),  −0.000 001 620 4 from Vallado D-3
 
         SOLAR_PRESSURE_N_M2 = 4.57e-6;
+        C_SPEED_OF_LIGHT_M_S = 299792458; % m / s
 
     end
 end
