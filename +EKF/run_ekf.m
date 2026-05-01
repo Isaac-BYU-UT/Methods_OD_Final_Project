@@ -1,21 +1,21 @@
 clear; clc;
 
 %% SETUP
-i_case = 2;
+i_case = 6;
 case_names = {'A','B','C','D','E','F','G'};
 
-i_scenario = 3;
-scenario_config = {'Accel','Final_3D','Final_3D','Final_6D','HW5'};
+i_scenario = 2;
+scenario_config = {'Accel','Final_1D','Final_3D','Final_6D','HW5','24Dynamics'};
 
 [S, ENV] = Setup.loadSettings(case_names{i_case},scenario_config{i_scenario},false,false);
 
 %%
-ekf.options = odeset('RelTol',1e-9,'AbsTol',1e-12);
+ekf.options = odeset('RelTol',1e-12,'AbsTol',1e-14);
 ekf.time_struct_epoch = ENV.time_struct_epoch;
 ekf.print_updates = true;
 ekf.f_updates = 40;
 ekf.debug_on = false;
-ekf.ode_type ='ode45';
+ekf.ode_type ='ode113';
 
 [S, ekf] = EKF.initialize_ekf(S, ENV, ekf);
 
@@ -94,7 +94,7 @@ Visuals.plot_station_residuals(Postfit_Measurement_Table, {S.Stations.name});
 Visuals.plot_measurement_correlation_linked(Postfit_Measurement_Table);
 
 %% Covariance Trace Evolution
-Visuals.plot_covariance_trace(ekf);
+% Visuals.plot_covariance_trace(ekf);
 
 %% Now, propagate state and covariance to dV1 = 30 March 2018, 08:55:03 UTC.
 
@@ -112,7 +112,6 @@ else
 [~, y_final] = ode45(@(t,X) jah_sat_1_ode( ...
 t, X, S, ENV, ekf.debug_on), ...
 [ekf.t_obs(end), t_dV1_sec], ekf.X_input, ekf.options);
-
 end
 
     X_full_propagated = transpose(y_final(end,:)); % Make this a column vector

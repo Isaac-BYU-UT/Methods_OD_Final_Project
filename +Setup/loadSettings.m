@@ -42,6 +42,9 @@ S.scenario_config = scenario_config;
             S.IC_Sat_Epoch = Setup.loadSatInitialConditions_24Ref();
             
     end
+
+    %% Add in Arecibo Bian
+    S.Arecibo_Range_Bias_m = 20; %meters, could find with batch processor (from NAG).
 %% Load in EOP Stuff
     EOP_data = Tools.get_EOP_data();
     ENV.EOP_IERS = EOP_data.EOP_IERS;
@@ -63,6 +66,7 @@ S.scenario_config = scenario_config;
     ENV.EOP_t0 = Tools.interpolate_EOP(S.IC_Sat_Epoch.epoch_date_time_UTC, ENV.EOP_IERS, ENV.EOP_Celestrak);
     ENV.time_struct_epoch = Tools.ComputeTimeSystems(S.IC_Sat_Epoch.epoch_date_time_UTC);
 
+    ENV.EGM96_20_x_20_Data = Tools.get_2020_EGM96_Data();
 
 %% Load Dyanmics and Measurement Functions
     if reload_dynamics

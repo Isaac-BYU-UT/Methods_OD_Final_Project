@@ -36,6 +36,10 @@ function [curr_meas,ekf] = compute_measurement(ekf, S, ENV, X_nominal)
                                                                     r_sat_nominal_ECI_m, v_sat_nominal_ECI_m_s,... % Before update
                                                                     curr_meas.r_stn_ECI_m, curr_meas.v_stn_ECI_m_s); % Comptued ECI
 
+    if (curr_meas.station_id == 3) % When Arecibo
+        curr_meas.y_computed_meters(1) = curr_meas.y_computed_meters(1) + S.Arecibo_Range_Bias_m; % TODO: Make this less rough
+    end
+    
     ekf.Y_prefit(:,i) = curr_meas.y_computed_meters;
     curr_meas.residual = curr_meas.y_obs_meters - curr_meas.y_computed_meters; % In meters and meters per second
 end

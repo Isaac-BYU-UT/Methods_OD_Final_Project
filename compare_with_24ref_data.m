@@ -3,7 +3,7 @@ clear; clc;
 %% SETUP -- just because we need the ENV and S stuff
 case_names = {'A','B','C','D','E','F'};
 scenario_config = {'Accel','Final_3D','Final_1D','HW5','24Dynamics'};
-[S, ENV] = Setup.loadSettings('F','Final_1D',false,false);
+[S, ENV] = Setup.loadSettings('F','24Dynamics',true,false);
 
 %%
 STM_0 = eye(6);
@@ -12,9 +12,9 @@ y0 = [S.IC_Sat_Epoch.position_ECI_meters;...
       STM_0(:)];
 
 tic;
-options = odeset('RelTol',1e-12,'AbsTol',1e-14);
+options = odeset('RelTol',1e-14,'AbsTol',1e-16);
 tspan = 0:60:Units.SEC_IN_SOLAR_DAY;
-[t, y] = ode45(@(t,X) jah_sat_1_ode( ...
+[t, y] = ode113(@(t,X) jah_sat_1_ode( ...
         t, X, S, ENV, true), ...
         tspan, y0, options);
 disp(toc)
@@ -24,10 +24,12 @@ State_Ref = load("ref_data\24hourStates.mat").State * Units.KILOMETERS;
 State_Isaac = y(:,1:6);
 
 %% 
-Diff_State = (State_Isaac - State_Ref) ./ State_Ref;
+Diff_State = (State_Isaac - State_Ref);
 
 plot(t,Diff_State)
 ylim([-1,1])
+
+disp(Diff_State(end,:))
 
 
 

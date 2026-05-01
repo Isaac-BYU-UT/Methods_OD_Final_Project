@@ -1,4 +1,4 @@
-function accel_ECI_meters_s2 = Gravity_Zonal(r_ECI_meters, R_ECEF_from_ECI, J2_on, J3_on, J4_on)
+function accel_ECI_meters_s2 = Gravity_Zonal(r_ECI_meters, R_ECEF_from_ECI)
     % GRAVITY_ZONAL Calculates acceleration due to J2, J3, and J4 zonals.
     % Refactored to match Vallado/Escobal algebraic forms.
     
@@ -24,7 +24,6 @@ function accel_ECI_meters_s2 = Gravity_Zonal(r_ECI_meters, R_ECEF_from_ECI, J2_o
     a_ECEF = [0; 0; 0];
     
     % 3. J2 Perturbation (Eq. 8-52)
-    if J2_on
         coeffJ2 = -(3 * J2 * mu * Re^2) / (2 * r^5);
         
         a_ECEF = a_ECEF + coeffJ2 * [ ...
@@ -32,10 +31,8 @@ function accel_ECI_meters_s2 = Gravity_Zonal(r_ECI_meters, R_ECEF_from_ECI, J2_o
             rJ * (1 - 5*rK2/r2); ...
             rK * (3 - 5*rK2/r2)  ...
         ];
-    end
     
     % 4. J3 Perturbation (Eq. 8-53)
-    if J3_on
         coeffJ3 = -(5 * J3 * mu * Re^3) / (2 * r^7);
         
         a_ECEF = a_ECEF + coeffJ3 * [ ...
@@ -43,10 +40,8 @@ function accel_ECI_meters_s2 = Gravity_Zonal(r_ECI_meters, R_ECEF_from_ECI, J2_o
             rJ * (3*rK - 7*rK^3/r2); ...
             (6*rK2 - 7*rK^4/r2 - (3/5)*r2) ...
         ];
-    end
     
     % 5. J4 Perturbation (Eq. 8-54)
-    if J4_on
         coeffJ4 = (15 * J4 * mu * Re^4) / (8 * r^7);
         
         a_ECEF = a_ECEF + coeffJ4 * [ ...
@@ -54,7 +49,6 @@ function accel_ECI_meters_s2 = Gravity_Zonal(r_ECI_meters, R_ECEF_from_ECI, J2_o
             rJ * (1 - 14*rK2/r2 + 21*rK^4/r^4); ...
             rK * (5 - 70/3*rK2/r2 + 21*rK^4/r^4) ...
         ];
-    end
     
     % 6. Rotate Acceleration back to ECI
     accel_ECI_meters_s2 = R_ECEF_from_ECI' * a_ECEF;
