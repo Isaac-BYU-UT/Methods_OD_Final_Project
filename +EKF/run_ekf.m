@@ -4,7 +4,7 @@ clear; clc;
 i_case = 6;
 case_names = {'A','B','C','D','E','F','G'};
 
-i_scenario = 4;
+i_scenario = 2;
 scenario_config = {'Accel','Final_1D','Final_3D','Final_6D','HW5','24Dynamics'};
 
 [S, ENV] = Setup.loadSettings(case_names{i_case},scenario_config{i_scenario},false,false);
@@ -13,7 +13,7 @@ scenario_config = {'Accel','Final_1D','Final_3D','Final_6D','HW5','24Dynamics'};
 ekf.options = odeset('RelTol',1e-12,'AbsTol',1e-14);
 ekf.time_struct_epoch = ENV.time_struct_epoch;
 ekf.print_updates = true;
-ekf.f_updates = 1;
+ekf.f_updates = 40;
 ekf.debug_on = false;
 ekf.ode_type ='ode113';
 
@@ -27,7 +27,6 @@ end
 %% FIRST OBS
 if ekf.t_obs(1) == 0
     ekf.current_index = 1;
-
     ekf = EKF.process_first_observation(ekf, S, ENV); % We just pass back ekf, this hold the new X_nominal state and P_cov.
     
 end

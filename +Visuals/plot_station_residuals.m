@@ -8,8 +8,8 @@ function plot_station_residuals(Measurement_Table, station_names, P_zz)
     t_sec     = Measurement_Table.time_sec_past_epoch;
     u_stations = unique(Measurement_Table.station_id);
 
-    three_sigma_range_meas = squeeze(P_zz(1,1,:)) * 3;
-    three_sigma_range_rate_meas = squeeze(P_zz(2,2,:)) * 3;
+    three_sigma_range_meas = squeeze(sqrt(P_zz(1,1,:))) * 3;
+    three_sigma_range_rate_meas = squeeze(sqrt(P_zz(2,2,:))) * 3;
     
     % Setup Figure
     figure('Color', 'w');

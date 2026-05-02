@@ -29,17 +29,16 @@ function [curr_meas,ekf] = compute_measurement(ekf, S, ENV, X_states_propogated)
                                                 zeros(3,1), date_time_at_meas, "ECEF_to_ECI", EOP_at_meas);
 
     % Prefit
-    r_sat_nominal_ECI_m = X_states_propogated(1:3);
-    v_sat_nominal_ECI_m_s = X_states_propogated(4:6);
+    r_sat_propogated_ECI_m = X_states_propogated(1:3);
+    v_sat_propogated_ECI_m_s = X_states_propogated(4:6);
 
 
     % THIS IS NOT YET LIGHT TIME CORRECTED!!!
     curr_meas.y_computed_propogated_no_lt_meters = Measurements.Compute_Range_Range_Rate( ...
-                                                                    r_sat_nominal_ECI_m, v_sat_nominal_ECI_m_s,... % Before update
+                                                                    r_sat_propogated_ECI_m, v_sat_propogated_ECI_m_s,... % Before update
                                                                     curr_meas.r_stn_ECI_m, curr_meas.v_stn_ECI_m_s); % Comptued ECI
 
     % -- Station Bias Here!!! ---
-
 
     % --- Arecibo Bias ---
     if (curr_meas.station_id == 3)
