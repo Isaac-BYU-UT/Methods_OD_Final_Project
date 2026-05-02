@@ -1,10 +1,10 @@
 clear; clc;
 
 %% SETUP
-i_case = 6;
+i_case = 5;
 case_names = {'A','B','C','D','E','F','G'};
 
-i_scenario = 2;
+i_scenario = 4;
 scenario_config = {'Accel','Final_1D','Final_3D','Final_6D','HW5','24Dynamics'};
 
 [S, ENV] = Setup.loadSettings(case_names{i_case},scenario_config{i_scenario},false,false);

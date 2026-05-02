@@ -1,5 +1,4 @@
-function plot_RIC_ellipses_all_cases
-(mat_path)
+function plot_RIC_ellipses_all_cases(mat_path)
 
 clc; close all;
 
@@ -83,8 +82,6 @@ for p = 1:3
     plot(0,0,'kp','MarkerSize',10,'MarkerFaceColor','k', ...
         'DisplayName','Case F (Truth)');
     
-    axis equal;
-    axis padded;
     
     legend show;
 

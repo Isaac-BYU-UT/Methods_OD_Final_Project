@@ -38,11 +38,4 @@ function [curr_meas,ekf] = compute_measurement(ekf, S, ENV, X_states_propogated)
                                                                     r_sat_propogated_ECI_m, v_sat_propogated_ECI_m_s,... % Before update
                                                                     curr_meas.r_stn_ECI_m, curr_meas.v_stn_ECI_m_s); % Comptued ECI
 
-    % -- Station Bias Here!!! ---
-
-    % --- Arecibo Bias ---
-    if (curr_meas.station_id == 3)
-        curr_meas.y_computed_propogated_no_lt_meters(1) = curr_meas.y_computed_propogated_no_lt_meters(1) + S.Arecibo_Range_Bias_m; % TODO: Make this less rough
-    end
-
 end

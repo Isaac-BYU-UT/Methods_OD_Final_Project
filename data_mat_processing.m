@@ -1,6 +1,6 @@
 clear; clc;
 
-results_dir = 'Results/5_1_2026_B/';
+results_dir = 'Results/5_1_2026_C/';
 
 % Initialize all cases as NaN (default)
 sorensen_pos_caseA = NaN(3,1); sorensen_vel_caseA = NaN(3,1); sorensen_poscov_caseA = NaN(3,3);

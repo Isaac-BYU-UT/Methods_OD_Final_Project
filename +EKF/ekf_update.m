@@ -27,7 +27,17 @@ function [X_states_updated, P_cov_updated, dx, ekf] = ekf_update(ekf, X_states_p
                                                     ekf, S, ENV, curr_meas);
 
 
+
+
         curr_meas.y_lt_computed_propogated_meters = y_lt_prefit_final_guess_m; % If we set this equal to the last viable, we should be good!
+
+        % -- Station Bias Here!!! ---
+
+        % --- Arecibo Bias ---
+        if (curr_meas.station_id == 3)
+            curr_meas.y_lt_computed_propogated_meters(1) = curr_meas.y_lt_computed_propogated_meters(1) + S.Arecibo_Range_Bias_m; % TODO: Make this less rough
+        end
+
         ekf.Y_prefit(:,i) = curr_meas.y_lt_computed_propogated_meters;
 
         curr_meas.residual = curr_meas.y_obs_meters - curr_meas.y_lt_computed_propogated_meters;
@@ -74,6 +84,15 @@ function [X_states_updated, P_cov_updated, dx, ekf] = ekf_update(ekf, X_states_p
                                             ekf, S, ENV, curr_meas);
 
         curr_meas.y_lt_computed_filtered_meters = y_lt_postfit_final_guess_m;
+
+        % -- Station Bias Here!!! ---
+
+        % --- Arecibo Bias ---
+        if (curr_meas.station_id == 3)
+            curr_meas.y_lt_computed_filtered_meters(1) = ...
+            curr_meas.y_lt_computed_filtered_meters(1) + S.Arecibo_Range_Bias_m;
+        end
+        
         ekf.Y_postfit(:,ekf.current_index) = curr_meas.y_lt_computed_filtered_meters;
 
     else
