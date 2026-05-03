@@ -1,4 +1,4 @@
-function plot_station_residuals(Measurement_Table, station_names, P_zz)
+function plot_station_residuals_no_bounds(Measurement_Table, station_names)
     % Measurement_Table: The table containing residuals and station_id
     % station_names: Cell array of strings, e.g., {'Atoll', 'Diego Garcia', ...}
 
@@ -8,8 +8,6 @@ function plot_station_residuals(Measurement_Table, station_names, P_zz)
     t_sec     = Measurement_Table.time_sec_past_epoch;
     u_stations = unique(Measurement_Table.station_id);
 
-    three_sigma_range_meas = squeeze(sqrt(P_zz(1,1,:))) * 3;
-    three_sigma_range_rate_meas = squeeze(sqrt(P_zz(2,2,:))) * 3;
     
     % Setup Figure
     figure('Color', 'w');
@@ -23,12 +21,6 @@ function plot_station_residuals(Measurement_Table, station_names, P_zz)
             'Color', colors(k,:), 'DisplayName', station_names{u_stations(k)});
     end
 
-    hold on;
-
-    plot(t_sec, three_sigma_range_meas,'k-','DisplayName', "+3\sigma");
-    plot(t_sec, -1 * three_sigma_range_meas,'k-','DisplayName', "-3\sigma"')
-
-    ylim([-200,200]);
     ylabel('Range Residual (meters)'); title('Station-Dependent Range Residuals');
     legend('Location', 'bestoutside'); set(gca, 'FontSize', 12);
 
@@ -41,12 +33,6 @@ function plot_station_residuals(Measurement_Table, station_names, P_zz)
             'Color', colors(k,:), 'DisplayName', station_names{u_stations(k)});
     end
     
-    hold on;
-
-    plot(t_sec, three_sigma_range_rate_meas,'k-','DisplayName', "+3\sigma");
-    plot(t_sec, -1 * three_sigma_range_rate_meas,'k-','DisplayName', "-3\sigma");
-
-    ylim([-1,1]);
     ylabel('Range-Rate Residual (meters/s)'); xlabel('Time since epoch (s)');
     title('Station-Dependent Range-Rate Residuals');
     legend('Location', 'bestoutside'); set(gca, 'FontSize', 12);

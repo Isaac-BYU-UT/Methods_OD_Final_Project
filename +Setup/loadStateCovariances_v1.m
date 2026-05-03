@@ -1,12 +1,12 @@
-function StateCovariances = loadStateCovariances_v0()
+function StateCovariances = loadStateCovariances_v1()
 
-    StateCovariances.sigma_position_meters = 5 * Units.KILOMETERS;
-    StateCovariances.sigma_velocity_meters_per_sec = 5;
-    StateCovariances.sigma_drag_coefficient = 0.05;
+    StateCovariances.sigma_position_meters = 100;        % About 2x the max deviation from truth starting position
+    StateCovariances.sigma_velocity_meters_per_sec = .1; % About 5x the max deviation from truth starting velocity
+    StateCovariances.sigma_drag_coefficient = 0.05; % Obsolete
 
-    StateCovariances.sigma_x_accel_meters_per_sec2 = 1e-7; 
-    StateCovariances.sigma_y_accel_meters_per_sec2 = 1e-8; 
-    StateCovariances.sigma_z_accel_meters_per_sec2 = 1e-8;
+    StateCovariances.sigma_x_accel_meters_per_sec2 = 5e-7; 
+    StateCovariances.sigma_y_accel_meters_per_sec2 = 5e-7; 
+    StateCovariances.sigma_z_accel_meters_per_sec2 = 5e-8;
 
     StateCovariances.P_Covariance_States = diag([StateCovariances.sigma_position_meters^2, ...
                                                 StateCovariances.sigma_position_meters^2, ...

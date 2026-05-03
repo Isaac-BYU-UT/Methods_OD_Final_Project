@@ -6,15 +6,16 @@ function EGM96_Data = get_2020_EGM96_Data()
     raw_egm96_coefficients = importdata("EOP_data/egm96_to360_ascii.txt");
     egm96_table = array2table(raw_egm96_coefficients,"VariableNames",{'l','m','Cbar_l_m','Sbar_l_m','std_C_n_m','std_S_n_m'}); % Note, the Original EGM data uses 'n' instead of 'l'.
     
-    table_20_20_EGM96 = egm96_table(1:228,:);
+    % table_20_20_EGM96 = egm96_table(1:228,:);
+    table_20_20_EGM96 = egm96_table(egm96_table.l <= 20,:)
 
     %% Constants
     L_max = 20; % For 20x20 EGM 96.
     
     % Pi_Normalization_Matrix = Tools.getNormalizationWeights(L_max);
     
-    C_coeff_matrix = NaN(L_max+1, L_max+1);
-    S_coeff_matrix = NaN(L_max+1, L_max+1);
+    C_coeff_matrix = zeros(L_max+1, L_max+1);
+    S_coeff_matrix = zeros(L_max+1, L_max+1);
     for i = 1:height(table_20_20_EGM96)
         L = table_20_20_EGM96.l(i) + 1; % Note we always have to add 1 for MATLAB!
         m = table_20_20_EGM96.m(i) + 1; % Note we always have to add 1 for MATLAB!
@@ -22,6 +23,10 @@ function EGM96_Data = get_2020_EGM96_Data()
         S_coeff_matrix(L,m) = table_20_20_EGM96.Sbar_l_m(i); % / Pi_Normalization_Matrix(L,m);
     end
 
+    C_coeff_matrix(1,1) = 1;
+    C_coeff_matrix(2,1) = 0;
+    C_coeff_matrix(2,2) = 0;
+    S_coeff_matrix(:,1) = 0;
     EGM96_Data_cached.C_coeff_matrix = C_coeff_matrix;
     EGM96_Data_cached.S_coeff_matrix = S_coeff_matrix;
     % EGM96_Data_cached.Pi_Normalization_Matrix = Pi_Normalization_Matrix;

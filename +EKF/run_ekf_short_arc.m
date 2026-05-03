@@ -1,16 +1,15 @@
-function run_ekf(i_case, plotting_on)
 
-% clear; clc;
 
-fprintf("RUNNING CASE: %d \n", i_case);
-disp("================================")
+clear; clc;
+
 
 %% SETUP
-% i_case = 6;
+plotting_on = false;
+i_case = 7;
 case_names = {'A','B','C','D','E','F','G'};
 
-i_scenario = 5;
-scenario_config = {'Accel','Final_1D','Final_3D','Final_6D','Final_6D_Batched','HW5','24Dynamics'};
+i_scenario = 6;
+scenario_config = {'Accel','Final_1D','Final_3D','Final_6D','Final_6D_Batched','Final_ShortArc','HW5','24Dynamics'};
 
 [S, ENV] = Setup.loadSettings(case_names{i_case},scenario_config{i_scenario},false,false);
 
@@ -30,12 +29,11 @@ if ekf.print_updates
     disp('Covariance Original:'); disp(ekf.P_cov);
 end
 
-%% FIRST OBS
-if ekf.t_obs(1) == 0
-    ekf.current_index = 1;
-    ekf = EKF.process_first_observation(ekf, S, ENV); % We just pass back ekf, this hold the new X_nominal state and P_cov.
-    
-end
+%% FIRST OBS -- Just assume this occurs with our starting initial condition
+
+ekf.current_index = 1;
+ekf = EKF.process_first_observation(ekf, S, ENV); % We just pass back ekf, this hold the new X_nominal state and P_cov.
+
 
 %% MAIN LOOP
 for i = 2:ekf.N_obs
@@ -145,5 +143,3 @@ file_name = sprintf('Results/EKF_Results_%s_%s_%s.mat', case_names{i_case},scena
 save(file_name);
 disp("File Saved!")
 disp("================================")
-
-end

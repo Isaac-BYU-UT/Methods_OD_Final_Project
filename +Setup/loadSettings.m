@@ -30,7 +30,26 @@ S.scenario_config = scenario_config;
             S.IC_Sat_Epoch = Setup.loadSatInitialConditions_Final();
             S.ref_data = Tools.get_reference_data_All6Days();
             S.StateCovariances = Setup.loadStateCovariances_v0();
+            
             S.Stations = Setup.loadStations_Final();
+
+        case 'Final_6D_Batched' % Final -- 6 Day Subset
+            S.IC_Sat_Epoch = Setup.loadSatInitialConditions_Final_Batched();
+            S.ref_data = Tools.get_reference_data_All6Days();
+            % S.StateCovariances = Setup.loadStateCovariances_v0();
+            S.StateCovariances = Setup.loadStateCovariances_v1();
+            S.Stations = Setup.loadStations_Final();
+
+        case 'Final_ShortArc' % Final -- Last Day
+            S.IC_Sat_Epoch = Setup.loadSatInitialConditions_Short_Arc();
+            All_data_set = Tools.get_reference_data_All6Days();
+            
+            first_5_day_index = find(All_data_set.Actual_Measurements.time_sec_past_epoch >= 432360, 1) - 1 ; % SHOULD BE 2134 MINUS 1 ---- dont forget this!!
+            S.ref_data.Actual_Measurements = structfun(@(x) x(first_5_day_index:end), All_data_set.Actual_Measurements, 'UniformOutput', false);
+            % S.StateCovariances = Setup.loadStateCovariances_v0();
+            S.StateCovariances = Setup.loadStateCovariances_v1();
+            S.Stations = Setup.loadStations_Final();
+
 
         case 'HW5' %'HW5 Subset - 6 Hours'
             S.IC_Sat_Epoch = Setup.loadSatInitialConditions_HW5();
@@ -43,8 +62,12 @@ S.scenario_config = scenario_config;
             
     end
 
-    %% Add in Arecibo Bian
-    S.Arecibo_Range_Bias_m = 20; %meters, could find with batch processor (from NAG).
+%% Add in Arecibo Bian
+S.Arecibo_Range_Bias_m = 20; %meters, could find with batch processor (from NAG).
+
+%% Truth Starting Position
+
+S.Truth_IC_Sat_Epoch = Setup.loadSatInitialConditions_24Ref();
 %% Load in EOP Stuff
     EOP_data = Tools.get_EOP_data();
     ENV.EOP_IERS = EOP_data.EOP_IERS;
@@ -110,9 +133,9 @@ S.scenario_config = scenario_config;
         case 'F' % Fit the Long Arc, All Data, All Stations
             return;
     
-         % TODO: FIGURE THIS ONE OUT!
+
         case 'G' % Fit the Short Arc, Only The Last Day of Data for All Sensors
-            % TODO: Need to implement the "short arc" part of this, but for now just return the same as F
+            % Take care of in setup above
             return;
 
     end
